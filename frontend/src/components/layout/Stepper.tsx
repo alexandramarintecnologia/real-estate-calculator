@@ -10,10 +10,11 @@ const steps = [
 
 interface StepperProps {
   currentStep: number;
+  highestStep?: number;
   onStepClick?: (step: number) => void;
 }
 
-export default function Stepper({ currentStep, onStepClick }: StepperProps) {
+export default function Stepper({ currentStep, highestStep = currentStep, onStepClick }: StepperProps) {
   return (
     <nav aria-label="Progreso" className="py-4">
       {/* Mobile */}
@@ -26,8 +27,9 @@ export default function Stepper({ currentStep, onStepClick }: StepperProps) {
       <ol className="hidden sm:flex items-center gap-2">
         {steps.map((step, idx) => {
           const isActive = step.id === currentStep;
-          const isCompleted = step.id < currentStep;
-          const isClickable = isCompleted && onStepClick;
+          const isUnlocked = step.id <= highestStep;
+          const isCompleted = step.id < highestStep;
+          const isClickable = isUnlocked && onStepClick;
 
           return (
             <li key={step.id} className="flex items-center gap-2">
@@ -38,7 +40,7 @@ export default function Stepper({ currentStep, onStepClick }: StepperProps) {
                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary"
-                    : isCompleted
+                    : isUnlocked
                       ? "text-success cursor-pointer hover:bg-success/5"
                       : "text-muted"
                 }`}
@@ -47,17 +49,17 @@ export default function Stepper({ currentStep, onStepClick }: StepperProps) {
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                     isActive
                       ? "bg-primary text-white"
-                      : isCompleted
+                      : isUnlocked
                         ? "bg-success text-white"
                         : "bg-foreground/10 text-muted"
                   }`}
                 >
-                  {isCompleted ? "✓" : step.id}
+                  {isUnlocked && !isActive ? "✓" : step.id}
                 </span>
                 <span className="hidden lg:inline">{step.label}</span>
               </button>
               {idx < steps.length - 1 && (
-                <div className={`h-px w-6 ${isCompleted ? "bg-success" : "bg-border"}`} />
+                <div className={`h-px w-6 ${isUnlocked ? "bg-success" : "bg-border"}`} />
               )}
             </li>
           );

@@ -78,7 +78,13 @@ export default function ResultsDashboard({ result, onReset }: ResultsDashboardPr
               <span className="font-medium">{formatCOP(item.value)}</span>
             </div>
           ))}
-          <div className="border-t border-border pt-3 flex items-center justify-between">
+          <div className="border-t border-border pt-3 mt-3 flex items-center justify-between">
+            <span className="text-sm font-semibold text-foreground">Precio de venta proyectado</span>
+            <span className="text-lg font-bold text-success">
+              {formatCOP(profitability.projectedSalePrice)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-foreground">Costo total del proyecto</span>
             <span className="text-lg font-bold text-foreground">
               {formatCOP(projectCosts.totalProjectCost)}

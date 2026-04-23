@@ -35,6 +35,7 @@ export interface ProjectCosts {
 }
 
 export interface ProfitabilityMetrics {
+  projectedSalePrice: number;
   grossProfit: number;
   roi: number;
   annualRentalIncome: number;

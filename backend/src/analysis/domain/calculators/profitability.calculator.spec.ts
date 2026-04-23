@@ -14,6 +14,7 @@ describe('ProfitabilityCalculator', () => {
       monthlyRent: 1_500_000,
     });
 
+    expect(result.projectedSalePrice).toBe(300_000_000);
     expect(result.grossProfit).toBe(50_000_000);
     expect(result.roi).toBe(20);
     expect(result.annualRentalIncome).toBe(18_000_000);

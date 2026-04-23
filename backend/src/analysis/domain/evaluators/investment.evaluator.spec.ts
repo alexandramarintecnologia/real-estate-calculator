@@ -10,6 +10,7 @@ describe('InvestmentEvaluator', () => {
   });
 
   const makeProfitability = (roi: number, capRate: number): ProfitabilityMetrics => ({
+    projectedSalePrice: 300_000_000,
     grossProfit: 50_000_000,
     roi,
     annualRentalIncome: 18_000_000,
@@ -63,7 +64,7 @@ describe('InvestmentEvaluator', () => {
 
   it('should generate recommendations', () => {
     const result = evaluator.evaluate(
-      { grossProfit: -10_000_000, roi: -5, annualRentalIncome: 6_000_000, capRate: 3 },
+      { projectedSalePrice: 100_000_000, grossProfit: -10_000_000, roi: -5, annualRentalIncome: 6_000_000, capRate: 3 },
       makeQualitative(Rating.RIESGOSA),
     );
 

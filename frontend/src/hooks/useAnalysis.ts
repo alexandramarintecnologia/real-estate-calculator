@@ -43,6 +43,7 @@ const defaultQualitative: QualitativeEvaluation = {
 
 export function useAnalysis() {
   const [step, setStep] = useState(1);
+  const [highestStep, setHighestStep] = useState(1);
   const [property, setProperty] = useState<PropertyData>(defaultProperty);
   const [remodeling, setRemodeling] = useState<RemodelingScenario>(defaultRemodeling);
   const [expenses, setExpenses] = useState<ProjectExpenses>(defaultExpenses);
@@ -51,7 +52,14 @@ export function useAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const goNext = useCallback(() => setStep((s) => Math.min(s + 1, 5)), []);
+  const goNext = useCallback(() => {
+    setStep((s) => {
+      const nextStep = Math.min(s + 1, 5);
+      setHighestStep((h) => Math.max(h, nextStep));
+      return nextStep;
+    });
+  }, []);
+
   const goPrev = useCallback(() => setStep((s) => Math.max(s - 1, 1)), []);
   const goTo = useCallback((s: number) => setStep(Math.max(1, Math.min(5, s))), []);
 
@@ -74,6 +82,7 @@ export function useAnalysis() {
       const data = await calculateAnalysis(request);
       setResult(data);
       setStep(5);
+      setHighestStep(5);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");
     } finally {
@@ -83,6 +92,7 @@ export function useAnalysis() {
 
   const reset = useCallback(() => {
     setStep(1);
+    setHighestStep(1);
     setProperty(defaultProperty);
     setRemodeling(defaultRemodeling);
     setExpenses(defaultExpenses);
@@ -93,6 +103,7 @@ export function useAnalysis() {
 
   return {
     step,
+    highestStep,
     goNext,
     goPrev,
     goTo,

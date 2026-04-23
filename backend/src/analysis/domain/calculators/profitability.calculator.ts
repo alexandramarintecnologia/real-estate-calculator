@@ -22,6 +22,7 @@ export class ProfitabilityCalculator {
       : 0;
 
     return {
+      projectedSalePrice,
       grossProfit: Math.round(grossProfit),
       roi: Math.round(roi * 100) / 100,
       annualRentalIncome: Math.round(annualRentalIncome),
