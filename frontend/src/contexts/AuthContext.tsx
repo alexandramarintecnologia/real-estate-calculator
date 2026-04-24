@@ -11,10 +11,16 @@ import {
 import { apiClient, getToken, setToken } from "@/lib/api-client";
 import type { AuthUser, LoginResponse } from "@/types/auth.types";
 
+interface CheckNewUserResponse {
+  email: string;
+  fullName: string;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  checkNewUser: (email: string) => Promise<CheckNewUserResponse>;
   setInitialPassword: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -49,10 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiClient.post<LoginResponse>("/auth/login", { email, password });
+    const res = await apiClient.post<LoginResponse>("/auth/login", {
+      email,
+      password,
+    });
     setToken(res.accessToken);
     setUser(res.user);
     return res.user;
+  }, []);
+
+  const checkNewUser = useCallback(async (email: string) => {
+    return apiClient.post<CheckNewUserResponse>("/auth/check-new-user", { email });
   }, []);
 
   const setInitialPassword = useCallback(async (email: string, password: string) => {
@@ -75,7 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, setInitialPassword, logout, refresh }}
+      value={{
+        user,
+        isLoading,
+        login,
+        checkNewUser,
+        setInitialPassword,
+        logout,
+        refresh,
+      }}
     >
       {children}
     </AuthContext.Provider>

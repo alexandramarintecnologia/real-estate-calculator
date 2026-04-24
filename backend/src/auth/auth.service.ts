@@ -12,6 +12,7 @@ import { UsersService } from '../users/users.service.js';
 import type { UserDocument } from '../users/schemas/user.schema.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { SetInitialPasswordDto } from './dto/set-initial-password.dto.js';
+import type { CheckNewUserDto } from './dto/check-new-user.dto.js';
 
 export interface JwtPayload {
   sub: string;
@@ -55,6 +56,29 @@ export class AuthService {
     this.ensureAccessValid(user);
 
     return this.issueSession(user);
+  }
+
+  async checkNewUser(dto: CheckNewUserDto) {
+    const notFoundMessage =
+      'No encontramos tu cuenta. Verifica con el administrador que ya haya sido creada.';
+
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) {
+      throw new UnauthorizedException(notFoundMessage);
+    }
+
+    if (!user.mustSetPassword) {
+      throw new BadRequestException(
+        'Esta cuenta ya tiene una contraseña configurada. Inicia sesión con tu contraseña.',
+      );
+    }
+
+    this.ensureAccessValid(user);
+
+    return {
+      email: user.email,
+      fullName: user.fullName,
+    };
   }
 
   async setInitialPassword(dto: SetInitialPasswordDto) {

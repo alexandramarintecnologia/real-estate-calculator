@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@n
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { SetInitialPasswordDto } from './dto/set-initial-password.dto.js';
+import { CheckNewUserDto } from './dto/check-new-user.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { UsersService } from '../users/users.service.js';
@@ -17,6 +18,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('check-new-user')
+  @HttpCode(HttpStatus.OK)
+  async checkNewUser(@Body() dto: CheckNewUserDto) {
+    return this.authService.checkNewUser(dto);
   }
 
   @Post('set-initial-password')

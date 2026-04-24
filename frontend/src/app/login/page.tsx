@@ -21,18 +21,19 @@ const FEATURES = [
   },
 ];
 
-type Mode = "login" | "set-password";
+type Mode = "login" | "check-email" | "set-password";
 
 const inputBaseClass =
   "block w-full rounded-2xl border border-border/80 bg-white py-3.5 pl-12 pr-12 text-sm text-foreground placeholder:text-muted/50 transition-colors focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, setInitialPassword } = useAuth();
+  const { login, checkNewUser, setInitialPassword } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
 
   const [email, setEmail] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,6 +42,7 @@ export default function LoginPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const goAfterAuth = (role: string) => {
@@ -50,6 +52,7 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setIsLoading(true);
     try {
       const user = await login(email, password);
@@ -69,9 +72,32 @@ export default function LoginPage() {
     }
   };
 
+  const handleCheckEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+    setIsLoading(true);
+    try {
+      const res = await checkNewUser(newUserEmail);
+      setEmail(res.email);
+      setNewPassword("");
+      setConfirmPassword("");
+      setMode("set-password");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No pudimos validar tu correo. Inténtalo de nuevo.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSetPassword = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setInfo(null);
 
     if (newPassword.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres.");
@@ -96,8 +122,24 @@ export default function LoginPage() {
   const backToLogin = () => {
     setMode("login");
     setError(null);
+    setInfo(null);
     setNewPassword("");
     setConfirmPassword("");
+    setNewUserEmail("");
+  };
+
+  const goToCheckEmail = () => {
+    setMode("check-email");
+    setError(null);
+    setInfo(null);
+    setNewUserEmail("");
+  };
+
+  const handleForgotPassword = () => {
+    setError(null);
+    setInfo(
+      "Si olvidaste tu contraseña, contacta al administrador para que la restablezca.",
+    );
   };
 
   return (
@@ -157,7 +199,7 @@ export default function LoginPage() {
             <Logo height={100} />
           </div>
 
-          {mode === "login" ? (
+          {mode === "login" && (
             <>
               <div className="text-center">
                 <h1 className="text-3xl font-bold text-[#1e1b4b]">
@@ -187,21 +229,23 @@ export default function LoginPage() {
                 />
 
                 <div className="flex items-center justify-between pt-1">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-muted transition-colors hover:text-foreground">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-border/80 text-[#7C3AED] focus:ring-[#7C3AED]"
-                    />
-                    Recordarme
-                  </label>
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={goToCheckEmail}
+                    className="text-sm font-medium text-[#7C3AED] transition-colors hover:text-[#6D28D9] hover:underline"
+                  >
+                    Soy usuario nuevo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
                     className="text-sm font-medium text-[#7C3AED] transition-colors hover:text-[#6D28D9] hover:underline"
                   >
                     ¿Olvidaste tu contraseña?
-                  </a>
+                  </button>
                 </div>
 
+                {info && <InfoMessage>{info}</InfoMessage>}
                 {error && <ErrorMessage>{error}</ErrorMessage>}
 
                 <SubmitButton isLoading={isLoading} label="Iniciar sesión" />
@@ -217,7 +261,58 @@ export default function LoginPage() {
                 </a>
               </p>
             </>
-          ) : (
+          )}
+
+          {mode === "check-email" && (
+            <>
+              <div className="text-center">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EDE9FE]">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7C3AED"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-[#1e1b4b]">
+                  Activa tu cuenta
+                </h1>
+                <p className="mt-3 text-sm text-muted">
+                  Ingresa el correo electrónico con el que se creó tu cuenta para
+                  continuar y crear tu contraseña.
+                </p>
+              </div>
+
+              <form onSubmit={handleCheckEmail} className="mt-8 space-y-6">
+                <EmailField
+                  value={newUserEmail}
+                  onChange={setNewUserEmail}
+                  autoFocus
+                />
+
+                {error && <ErrorMessage>{error}</ErrorMessage>}
+
+                <SubmitButton isLoading={isLoading} label="Continuar" />
+
+                <button
+                  type="button"
+                  onClick={backToLogin}
+                  className="block w-full text-center text-sm font-medium text-muted transition-colors hover:text-foreground"
+                >
+                  ← Volver al inicio de sesión
+                </button>
+              </form>
+            </>
+          )}
+
+          {mode === "set-password" && (
             <>
               <div className="text-center">
                 <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EDE9FE]">
@@ -289,6 +384,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 function EmailField({
   value,
@@ -430,6 +526,27 @@ function ErrorMessage({ children }: { children: React.ReactNode }) {
         <circle cx="12" cy="12" r="10" />
         <line x1="12" y1="8" x2="12" y2="12" />
         <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function InfoMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-[#7C3AED]/20 bg-[#EDE9FE]/60 p-3 text-sm text-[#4C1D95]">
+      <svg
+        className="mt-0.5 h-4 w-4 shrink-0"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
       </svg>
       <span>{children}</span>
     </div>
