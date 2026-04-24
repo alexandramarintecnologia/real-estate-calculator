@@ -1,6 +1,12 @@
 import type { AnalysisRequest, AnalysisResult } from "@/types/analysis.types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+const API_VERSION = "/api/v1";
+
+const API_SERVER = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"
+).replace(/\/+$/, "");
+
+const API_BASE = `${API_SERVER}${API_VERSION}`;
 
 const TOKEN_KEY = "am_access_token";
 
