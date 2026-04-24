@@ -14,10 +14,10 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-
+  console.log('ConfigService', ConfigService);
   const config = app.get(ConfigService);
   const corsOrigin = config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
-  
+
   // Convertimos la cadena separada por comas en un array de orígenes
   const origins = corsOrigin.split(',').map((o) => o.trim());
 
