@@ -3,21 +3,20 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import Button from "@/components/ui/Button";
 import Logo from "@/components/layout/Logo";
 
 const FEATURES = [
   {
-    title: "Decisiones basadas en datos",
-    description: "ROI, Cap Rate y evaluación de zona calculados al instante.",
+    title: "Maximiza tu retorno de inversión",
+    description: "Calcula ROI y Cap Rate con precisión profesional",
   },
   {
     title: "Escenarios de remodelación",
-    description: "Compara los 3 niveles de inversión y elige el mejor.",
+    description: "Evalúa costos y beneficios de renovaciones",
   },
   {
-    title: "Minimiza tus riesgos",
-    description: "Identifica rápidamente si una propiedad es un buen negocio antes de invertir.",
+    title: "Análisis comparativo de zonas",
+    description: "Compara rentabilidades por ubicación",
   },
 ];
 
@@ -49,93 +48,80 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-1 flex-col lg:flex-row">
       {/* Panel izquierdo — branding */}
       <aside
-        className="brand-pattern relative flex flex-col justify-between overflow-hidden px-8 py-10 text-white lg:w-[45%] lg:px-14 lg:py-12"
+        className="brand-pattern relative hidden flex-col justify-between overflow-hidden px-8 py-10 text-white lg:flex lg:w-[45%] lg:px-14 lg:py-12"
         style={{
           background:
-            "linear-gradient(135deg, #5B21B6 0%, #6D28D9 50%, #7C3AED 100%)",
+            "linear-gradient(135deg, #4C1D95 0%, #7C3AED 50%, #8B5CF6 100%)",
         }}
       >
         {/* Blobs decorativos */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
 
         <div className="relative z-10 flex items-center gap-3">
           <Logo height={120} invert className="drop-shadow-lg" />
         </div>
 
         <div className="relative z-10 hidden lg:block">
-          <h2 className="text-3xl font-semibold leading-tight sm:text-4xl">
+          <h2 className="text-3xl font-bold leading-tight sm:text-4xl">
             Invierte en propiedades con la confianza que dan los números.
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-white/80">
-            La herramienta profesional que te guía desde el análisis financiero hasta
-            la evaluación de zona, en minutos y con precisión.
+          <p className="mt-5 text-[15px] leading-relaxed text-white/90">
+            Analiza inversiones inmobiliarias con datos precisos y toma
+            decisiones informadas para maximizar tu rentabilidad.
           </p>
 
-          <ul className="mt-10 space-y-5">
+          <ul className="mt-10 space-y-6">
             {FEATURES.map((feature) => (
-              <li key={feature.title} className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+              <li key={feature.title} className="flex items-start gap-4">
+                <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20">
+                  <div className="h-2 w-2 rounded-full bg-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{feature.title}</p>
-                  <p className="mt-0.5 text-xs text-white/70">{feature.description}</p>
+                  <p className="text-[15px] font-semibold">{feature.title}</p>
+                  <p className="mt-0.5 text-sm text-white/80">{feature.description}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="relative z-10 hidden text-xs text-white/60 lg:block">
-          © {new Date().getFullYear()} Alexandra Marín · Bienes Raíces
+        <div className="relative z-10 hidden text-xs text-white/70 lg:block">
+          © {new Date().getFullYear()} AM Bienes Raíces. Todos los derechos reservados.
         </div>
       </aside>
 
       {/* Panel derecho — formulario */}
-      <main className="flex flex-1 items-center justify-center bg-background px-4 py-10 sm:px-6 lg:py-12">
-        <div className="w-full max-w-md animate-fade-in-up">
-          {/* Logo solo visible en móvil (en desktop está en el panel izq) */}
+      <main className="flex flex-1 flex-col items-center justify-center bg-background px-4 py-10 sm:px-6 lg:py-12">
+        {/* Franja decorativa superior (solo móvil) */}
+        <div className="absolute left-0 top-0 h-16 w-full bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6] lg:hidden" />
+
+        <div className="w-full max-w-[420px] animate-fade-in-up mt-16 lg:mt-0">
+          {/* Logo solo visible en móvil */}
           <div className="mb-10 flex items-center justify-center lg:hidden">
             <Logo height={100} />
           </div>
 
-          <div>
-            <span className="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-primary">
-              Acceso privado
-            </span>
-            <h1 className="mt-4 text-2xl font-semibold text-foreground sm:text-3xl">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-[#1e1b4b]">
               Bienvenido de nuevo
             </h1>
-            <p className="mt-2 text-sm text-muted">
-              Inicia sesión con el correo y la contraseña que te entregaron al adquirir
-              el curso.
+            <p className="mt-3 text-sm text-muted">
+              Ingresa tus credenciales para continuar
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-            <div className="space-y-1.5">
+          <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+            <div className="space-y-2">
               <label
-                className="block text-xs font-medium uppercase tracking-wide text-muted"
+                className="block text-sm font-semibold text-[#1e1b4b]"
                 htmlFor="email"
               >
-                Correo electrónico
+                Correo Electrónico
               </label>
               <div className="relative">
                 <svg
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                  className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted/70"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -154,22 +140,22 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-3 text-sm text-foreground placeholder:text-muted/60 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="tucorreo@ejemplo.com"
+                  className="block w-full rounded-2xl border border-border/80 bg-white py-3.5 pl-12 pr-4 text-sm text-foreground placeholder:text-muted/50 transition-colors focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+                  placeholder="tu@email.com"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label
-                className="block text-xs font-medium uppercase tracking-wide text-muted"
+                className="block text-sm font-semibold text-[#1e1b4b]"
                 htmlFor="password"
               >
                 Contraseña
               </label>
               <div className="relative">
                 <svg
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                  className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted/70"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -189,42 +175,22 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-10 text-sm text-foreground placeholder:text-muted/60 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="block w-full rounded-2xl border border-border/80 bg-white py-3.5 pl-12 pr-12 text-sm text-foreground placeholder:text-muted/50 transition-colors focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted transition-colors hover:bg-foreground/5 hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted/70 transition-colors hover:bg-foreground/5 hover:text-foreground"
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
                   {showPassword ? (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
                       <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -233,18 +199,22 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted transition-colors hover:text-foreground">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border/80 text-[#7C3AED] focus:ring-[#7C3AED]"
+                />
+                Recordarme
+              </label>
+              <a href="#" className="text-sm font-medium text-[#7C3AED] transition-colors hover:text-[#6D28D9] hover:underline">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+
             {error && (
-              <div className="flex items-start gap-2 rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
-                <svg
-                  className="mt-0.5 h-4 w-4 shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
+              <div className="flex items-start gap-2 rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
+                <svg className="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -253,16 +223,42 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" isLoading={isLoading}>
-              Iniciar sesión
-            </Button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#7C3AED] py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_-6px_rgba(124,58,237,0.5)] transition-all hover:bg-[#6D28D9] hover:shadow-[0_8px_20px_-6px_rgba(109,40,217,0.5)] focus:outline-none focus:ring-2 focus:ring-[#7C3AED] focus:ring-offset-2 disabled:opacity-70"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6" />
+                    <line x1="12" y1="18" x2="12" y2="22" />
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                    <line x1="2" y1="12" x2="6" y2="12" />
+                    <line x1="18" y1="12" x2="22" y2="12" />
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+                  </svg>
+                  Iniciando...
+                </span>
+              ) : (
+                <>
+                  Iniciar sesión
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </>
+              )}
+            </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-muted">
-            ¿Problemas con tu acceso?{" "}
-            <span className="font-medium text-foreground">
-              Comunícate con el equipo de Alexandra Marín.
-            </span>
+          <p className="mt-10 text-center text-sm text-muted">
+            ¿No tienes una cuenta?{" "}
+            <a href="#" className="font-medium text-[#7C3AED] transition-colors hover:text-[#6D28D9] hover:underline">
+              Contacta al administrador
+            </a>
           </p>
         </div>
       </main>
