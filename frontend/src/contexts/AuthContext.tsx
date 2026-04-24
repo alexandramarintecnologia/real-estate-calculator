@@ -15,6 +15,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  setInitialPassword: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -54,6 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
+  const setInitialPassword = useCallback(async (email: string, password: string) => {
+    const res = await apiClient.post<LoginResponse>("/auth/set-initial-password", {
+      email,
+      password,
+    });
+    setToken(res.accessToken);
+    setUser(res.user);
+    return res.user;
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -63,7 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, refresh }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, setInitialPassword, logout, refresh }}
+    >
       {children}
     </AuthContext.Provider>
   );

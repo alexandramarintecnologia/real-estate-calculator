@@ -67,6 +67,30 @@ function getUserStatus(user: AuthUser, now = new Date()): Exclude<UserStatusFilt
   return "active";
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fallback abajo
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function AdminContent() {
   const [paginated, setPaginated] = useState<PaginatedUsers | null>(null);
   const [stats, setStats] = useState<UsersStats>({
@@ -138,18 +162,30 @@ function AdminContent() {
 
   const notify = useCallback((msg: string) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(null), 3000);
+    setTimeout(() => setSuccessMsg(null), 7000);
   }, []);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([loadUsers(), loadStats()]);
   }, [loadUsers, loadStats]);
 
-  const handleCreated = useCallback(async () => {
-    setShowCreate(false);
-    notify("Usuario creado correctamente");
-    await refreshAll();
-  }, [notify, refreshAll]);
+  const handleCreated = useCallback(
+    async (email?: string) => {
+      setShowCreate(false);
+      if (email) {
+        const copied = await copyToClipboard(email);
+        notify(
+          copied
+            ? `Usuario creado. El email se copió al portapapeles; compártelo con ${email} para que cree su contraseña al iniciar sesión.`
+            : `Usuario creado. Comparte el email ${email} para que cree su contraseña al iniciar sesión.`,
+        );
+      } else {
+        notify("Usuario creado correctamente");
+      }
+      await refreshAll();
+    },
+    [notify, refreshAll],
+  );
 
   const handleUpdated = useCallback(async () => {
     setEditingUser(null);
@@ -166,6 +202,21 @@ function AdminContent() {
         await refreshAll();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error eliminando usuario");
+      }
+    },
+    [notify, refreshAll],
+  );
+
+  const handleResetPassword = useCallback(
+    async (user: AuthUser) => {
+      const confirmMsg = `¿Resetear la contraseña de ${user.email}?\n\nEl usuario tendrá que crear una nueva contraseña en su próximo inicio de sesión.`;
+      if (!confirm(confirmMsg)) return;
+      try {
+        await apiClient.post(`/users/${user.id}/reset-password`, {});
+        notify("Contraseña reseteada. El usuario deberá crearla al iniciar sesión.");
+        await refreshAll();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error reseteando contraseña");
       }
     },
     [notify, refreshAll],
@@ -359,32 +410,48 @@ function AdminContent() {
                             </span>
                           </td>
                           <td className="py-3 pr-3">
-                            {status === "disabled" ? (
-                              <span className="inline-flex rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                                Desactivado
-                              </span>
-                            ) : status === "expired" ? (
-                              <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                                Expirado
-                              </span>
-                            ) : (
-                              <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                                Activo
-                              </span>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {status === "disabled" ? (
+                                <span className="inline-flex rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+                                  Desactivado
+                                </span>
+                              ) : status === "expired" ? (
+                                <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                                  Expirado
+                                </span>
+                              ) : (
+                                <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                                  Activo
+                                </span>
+                              )}
+                              {u.mustSetPassword && (
+                                <span className="inline-flex rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
+                                  Pendiente activar
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 pr-3 text-foreground">{formatDate(u.expiresAt)}</td>
                           <td className="py-3 pr-3 text-muted">
                             {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Nunca"}
                           </td>
                           <td className="py-3 pr-3 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex flex-wrap justify-end gap-2">
                               <button
                                 onClick={() => setEditingUser(u)}
                                 className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-card-hover"
                               >
                                 Editar
                               </button>
+                              {u.role !== "admin" && !u.mustSetPassword && (
+                                <button
+                                  onClick={() => handleResetPassword(u)}
+                                  className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary/40 hover:bg-primary-softer hover:text-primary"
+                                  title="El usuario tendrá que crear una nueva contraseña en su próximo ingreso"
+                                >
+                                  Resetear contraseña
+                                </button>
+                              )}
                               {u.role !== "admin" && (
                                 <button
                                   onClick={() => handleDelete(u)}
@@ -425,8 +492,10 @@ function AdminContent() {
           title="Crear nuevo usuario"
           onClose={() => setShowCreate(false)}
           onSubmit={async (values) => {
-            await apiClient.post<AuthUser>("/users", values);
-            await handleCreated();
+            const { password: _password, ...rest } = values;
+            const payload: CreateUserPayload = { ...rest } as CreateUserPayload;
+            await apiClient.post<AuthUser>("/users", payload);
+            await handleCreated(payload.email);
           }}
           isCreate
         />
@@ -519,11 +588,13 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
       const values: UserFormValues = {
         fullName,
         email,
-        password,
         role,
         isActive,
         expiresAt: expiresAt ? toEndOfDayIsoColombia(expiresAt) : null,
       };
+      if (!isCreate && password) {
+        values.password = password;
+      }
       await onSubmit(values);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
@@ -567,19 +638,42 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
             />
           </Field>
 
-          <Field
-            label={isCreate ? "Contraseña" : "Nueva contraseña (opcional)"}
-            hint={isCreate ? "Mínimo 6 caracteres" : "Déjala vacía para no cambiarla"}
-          >
-            <input
-              type="password"
-              required={isCreate}
-              minLength={isCreate ? 6 : undefined}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </Field>
+          {isCreate ? (
+            <div className="flex gap-2 rounded-lg border border-primary/20 bg-primary-softer p-3 text-xs text-primary">
+              <svg
+                className="mt-0.5 h-4 w-4 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <p className="leading-relaxed">
+                <strong className="font-semibold">No necesitas asignar una contraseña.</strong>{" "}
+                El usuario creará la suya al iniciar sesión por primera vez con
+                su correo electrónico.
+              </p>
+            </div>
+          ) : (
+            <Field
+              label="Nueva contraseña (opcional)"
+              hint="Déjala vacía para no cambiarla. Si la cambias, sustituirá la que tenga el usuario."
+            >
+              <input
+                type="password"
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </Field>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Rol">

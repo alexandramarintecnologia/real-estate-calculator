@@ -18,6 +18,20 @@ export function setToken(token: string | null) {
   }
 }
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  body: Record<string, unknown>;
+
+  constructor(message: string, status: number, body: Record<string, unknown>) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+    if (typeof body.code === "string") this.code = body.code;
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers = new Headers(init.headers);
@@ -27,8 +41,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ message: `Error ${res.status}` }));
-    const message = Array.isArray(body.message) ? body.message.join(", ") : body.message;
+    const body: Record<string, unknown> = await res
+      .json()
+      .catch(() => ({ message: `Error ${res.status}` }));
+    const rawMessage = body.message;
+    const message = Array.isArray(rawMessage)
+      ? rawMessage.join(", ")
+      : typeof rawMessage === "string"
+        ? rawMessage
+        : `Error ${res.status}`;
 
     if (res.status === 401) {
       setToken(null);
@@ -37,7 +58,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       }
     }
 
-    throw new Error(message ?? `Error ${res.status}`);
+    throw new ApiError(message, res.status, body);
   }
 
   if (res.status === 204) return undefined as T;

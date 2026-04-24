@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { SetInitialPasswordDto } from './dto/set-initial-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { UsersService } from '../users/users.service.js';
@@ -13,8 +14,15 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('set-initial-password')
+  @HttpCode(HttpStatus.OK)
+  async setInitialPassword(@Body() dto: SetInitialPasswordDto) {
+    return this.authService.setInitialPassword(dto);
   }
 
   @UseGuards(JwtAuthGuard)

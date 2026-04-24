@@ -1,14 +1,25 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service.js';
+import type { UserDocument } from '../users/schemas/user.schema.js';
 import type { LoginDto } from './dto/login.dto.js';
+import type { SetInitialPasswordDto } from './dto/set-initial-password.dto.js';
 
 export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
 }
+
+export const PASSWORD_NOT_SET_CODE = 'PASSWORD_NOT_SET';
 
 @Injectable()
 export class AuthService {
@@ -23,13 +34,71 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    if (user.mustSetPassword) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.PRECONDITION_REQUIRED,
+          code: PASSWORD_NOT_SET_CODE,
+          message:
+            'Debes crear tu contraseña para acceder por primera vez.',
+          email: user.email,
+        },
+        HttpStatus.PRECONDITION_REQUIRED,
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    this.ensureAccessValid(user);
+
+    return this.issueSession(user);
+  }
+
+  async setInitialPassword(dto: SetInitialPasswordDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    if (!user.mustSetPassword) {
+      throw new BadRequestException(
+        'Este usuario ya tiene una contraseña configurada. Inicia sesión normalmente.',
+      );
+    }
+
+    this.ensureAccessValid(user);
+
+    const id = user._id?.toString() ?? '';
+    const updated = await this.usersService.setPassword(id, dto.password);
+    return this.issueSession(updated);
+  }
+
+  async validateUser(userId: string) {
+    const user = await this.usersService.findById(userId);
+
+    if (user.mustSetPassword) {
+      throw new UnauthorizedException(
+        'Tu contraseña fue restablecida. Vuelve a iniciar sesión para crearla de nuevo.',
+      );
+    }
+
+    if (!this.usersService.isAccessValid(user)) {
+      throw new ForbiddenException(
+        'Tu acceso ha expirado o fue desactivado. Vuelve a iniciar sesión.',
+      );
+    }
+
+    return user;
+  }
+
+  private ensureAccessValid(user: UserDocument) {
     if (!user.isActive) {
-      throw new ForbiddenException('Tu cuenta está desactivada. Contacta al administrador.');
+      throw new ForbiddenException(
+        'Tu cuenta está desactivada. Contacta al administrador.',
+      );
     }
 
     if (user.expiresAt && new Date() > user.expiresAt) {
@@ -37,7 +106,9 @@ export class AuthService {
         'Tu acceso a la plataforma ha expirado. Contacta al administrador para renovarlo.',
       );
     }
+  }
 
+  private async issueSession(user: UserDocument) {
     await this.usersService.updateLastLogin(user._id?.toString() ?? '');
 
     const payload: JwtPayload = {
@@ -50,17 +121,5 @@ export class AuthService {
       accessToken: this.jwtService.sign(payload),
       user: this.usersService.sanitize(user),
     };
-  }
-
-  async validateUser(userId: string) {
-    const user = await this.usersService.findById(userId);
-
-    if (!this.usersService.isAccessValid(user)) {
-      throw new ForbiddenException(
-        'Tu acceso ha expirado o fue desactivado. Vuelve a iniciar sesión.',
-      );
-    }
-
-    return user;
   }
 }

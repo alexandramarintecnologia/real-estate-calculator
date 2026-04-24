@@ -8,6 +8,7 @@ export interface AuthUser {
   isActive: boolean;
   expiresAt: string | null;
   lastLoginAt: string | null;
+  mustSetPassword: boolean;
   createdAt?: string;
 }
 
@@ -18,7 +19,7 @@ export interface LoginResponse {
 
 export interface CreateUserPayload {
   email: string;
-  password: string;
+  password?: string;
   fullName: string;
   role?: UserRole;
   expiresAt?: string | null;

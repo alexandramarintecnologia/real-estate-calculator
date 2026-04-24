@@ -13,8 +13,11 @@ export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email!: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   password!: string;
+
+  @Prop({ default: false })
+  mustSetPassword!: boolean;
 
   @Prop({ required: true })
   fullName!: string;

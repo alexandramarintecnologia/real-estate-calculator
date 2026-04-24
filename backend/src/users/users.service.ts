@@ -72,11 +72,14 @@ export class UsersService implements OnModuleInit {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
 
-    const hashed = await bcrypt.hash(dto.password, 10);
+    const hasPassword = typeof dto.password === 'string' && dto.password.length > 0;
+    const hashedPassword = hasPassword ? await bcrypt.hash(dto.password as string, 10) : '';
+
     return this.userModel.create({
       ...dto,
       email: dto.email.toLowerCase(),
-      password: hashed,
+      password: hashedPassword,
+      mustSetPassword: !hasPassword,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
     });
   }
@@ -177,6 +180,7 @@ export class UsersService implements OnModuleInit {
 
     if (dto.password) {
       update.password = await bcrypt.hash(dto.password, 10);
+      update.mustSetPassword = false;
     }
 
     if (dto.expiresAt !== undefined) {
@@ -184,6 +188,27 @@ export class UsersService implements OnModuleInit {
     }
 
     const user = await this.userModel.findByIdAndUpdate(id, update, { new: true });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
+
+  async resetPassword(id: string): Promise<UserDocument> {
+    const user = await this.userModel.findByIdAndUpdate(
+      id,
+      { password: '', mustSetPassword: true },
+      { new: true },
+    );
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
+
+  async setPassword(id: string, rawPassword: string): Promise<UserDocument> {
+    const hashed = await bcrypt.hash(rawPassword, 10);
+    const user = await this.userModel.findByIdAndUpdate(
+      id,
+      { password: hashed, mustSetPassword: false },
+      { new: true },
+    );
     if (!user) throw new NotFoundException('Usuario no encontrado');
     return user;
   }
@@ -212,6 +237,7 @@ export class UsersService implements OnModuleInit {
       isActive: user.isActive,
       expiresAt: user.expiresAt,
       lastLoginAt: user.lastLoginAt,
+      mustSetPassword: user.mustSetPassword ?? false,
       createdAt: (user as any).createdAt,
     };
   }

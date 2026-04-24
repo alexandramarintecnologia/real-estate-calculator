@@ -55,6 +55,12 @@ export class UsersController {
     return this.usersService.sanitize(user);
   }
 
+  @Post(':id/reset-password')
+  async resetPassword(@Param('id') id: string) {
+    const user = await this.usersService.resetPassword(id);
+    return this.usersService.sanitize(user);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
