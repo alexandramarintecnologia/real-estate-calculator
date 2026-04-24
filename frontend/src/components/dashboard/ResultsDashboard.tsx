@@ -7,14 +7,18 @@ import RecommendationCard from "./RecommendationCard";
 import ScenarioComparison from "./ScenarioComparison";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import type { AnalysisResult } from "@/types/analysis.types";
+import DownloadPDFButton from "./DownloadPDFButton";
+import { useAuth } from "@/contexts/AuthContext";
+import type { AnalysisResult, PropertyData } from "@/types/analysis.types";
 
 interface ResultsDashboardProps {
   result: AnalysisResult;
+  property: PropertyData;
   onReset: () => void;
 }
 
-export default function ResultsDashboard({ result, onReset }: ResultsDashboardProps) {
+export default function ResultsDashboard({ result, property, onReset }: ResultsDashboardProps) {
+  const { user } = useAuth();
   const { profitability, projectCosts, evaluation, qualitative } = result;
 
   return (
@@ -139,7 +143,12 @@ export default function ResultsDashboard({ result, onReset }: ResultsDashboardPr
       <RecommendationCard recommendations={evaluation.recommendations} />
 
       {/* Acciones */}
-      <div className="flex justify-center pt-4">
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+        <DownloadPDFButton
+          result={result}
+          property={property}
+          generatedBy={user?.fullName}
+        />
         <Button variant="outline" onClick={onReset}>
           Analizar otra propiedad
         </Button>

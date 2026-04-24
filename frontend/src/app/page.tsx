@@ -83,7 +83,7 @@ function HomeContent() {
             />
           )}
           {step === 5 && result && (
-            <ResultsDashboard result={result} onReset={reset} />
+            <ResultsDashboard result={result} property={property} onReset={reset} />
           )}
         </div>
       </main>
