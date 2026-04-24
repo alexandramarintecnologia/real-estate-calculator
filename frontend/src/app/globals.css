@@ -1,17 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --success: #16a34a;
-  --warning: #d97706;
-  --danger: #dc2626;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --card: #ffffff;
-  --card-hover: #f1f5f9;
+  /* Backgrounds */
+  --background: #FAFAFA;
+  --foreground: #18181B;
+  --card: #FFFFFF;
+  --card-hover: #F4F4F5;
+
+  /* Brand violet */
+  --primary: #6D28D9;
+  --primary-hover: #5B21B6;
+  --primary-soft: #EDE9FE;
+  --primary-softer: #F5F3FF;
+
+  /* Semantic */
+  --success: #059669;
+  --success-soft: #D1FAE5;
+  --warning: #D97706;
+  --warning-soft: #FEF3C7;
+  --danger: #DC2626;
+  --danger-soft: #FEE2E2;
+
+  /* Neutrals */
+  --muted: #71717A;
+  --border: #E4E4E7;
+  --border-strong: #D4D4D8;
 }
 
 @theme inline {
@@ -19,11 +32,17 @@
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-softer: var(--primary-softer);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-card: var(--card);
   --color-card-hover: var(--card-hover);
   --font-sans: var(--font-geist-sans);
@@ -34,4 +53,58 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection color */
+::selection {
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
+/* Custom scrollbar, sutil */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Utilidad: logo invertido (para fondos oscuros) */
+.logo-invert {
+  filter: brightness(0) invert(1);
+}
+
+/* Patrón decorativo para el panel del login */
+.brand-pattern {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(255, 255, 255, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+}
+
+/* Animación sutil de entrada para el formulario */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
 }

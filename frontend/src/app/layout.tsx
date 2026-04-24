@@ -14,8 +14,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Calculadora Inmobiliaria | Alexandra Marín",
-  description: "Herramienta profesional de análisis de inversiones inmobiliarias",
+  title: "Calculadora Inmobiliaria | Alexandra Marín Bienes Raíces",
+  description:
+    "Herramienta profesional para analizar inversiones inmobiliarias: ROI, Cap Rate, escenarios de remodelación y evaluación de zona.",
+  icons: {
+    icon: "/logo.svg",
+  },
+};
+
+export const viewport = {
+  themeColor: "#6D28D9",
 };
 
 export default function RootLayout({

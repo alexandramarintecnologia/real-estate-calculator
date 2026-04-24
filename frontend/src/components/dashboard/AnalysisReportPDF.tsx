@@ -5,28 +5,29 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
-  Font,
 } from "@react-pdf/renderer";
 import type { AnalysisResult, PropertyData } from "@/types/analysis.types";
 import { Decision, Rating } from "@/types/analysis.types";
 
 const COLORS = {
-  primary: "#2563EB",
-  primaryDark: "#1D4ED8",
-  foreground: "#0F172A",
-  muted: "#64748B",
-  border: "#E2E8F0",
-  borderLight: "#F1F5F9",
+  primary: "#6D28D9",
+  primaryDark: "#5B21B6",
+  primaryLight: "#EDE9FE",
+  primarySofter: "#F5F3FF",
+  foreground: "#18181B",
+  muted: "#71717A",
+  border: "#E4E4E7",
+  borderLight: "#F4F4F5",
   background: "#FFFFFF",
-  card: "#F8FAFC",
+  card: "#FAFAFA",
   success: "#059669",
   successLight: "#D1FAE5",
   warning: "#D97706",
   warningLight: "#FEF3C7",
   danger: "#DC2626",
   dangerLight: "#FEE2E2",
-  primaryLight: "#DBEAFE",
 };
 
 const styles = StyleSheet.create({
@@ -52,19 +53,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  logo: {
-    width: 36,
-    height: 36,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  logoText: {
-    color: "#FFFFFF",
-    fontFamily: "Helvetica-Bold",
-    fontSize: 13,
+  logoImage: {
+    width: 64,
+    height: 44,
+    objectFit: "contain",
+    marginRight: 12,
   },
   brandTitle: {
     fontFamily: "Helvetica-Bold",
@@ -429,9 +422,7 @@ export default function AnalysisReportPDF({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>AM</Text>
-            </View>
+            <Image src="/logo.png" style={styles.logoImage} />
             <View>
               <Text style={styles.brandTitle}>Calculadora Inmobiliaria</Text>
               <Text style={styles.brandSubtitle}>Alexandra Marín Bienes Raíces</Text>
@@ -602,9 +593,7 @@ export default function AnalysisReportPDF({
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>AM</Text>
-            </View>
+            <Image src="/logo.png" style={styles.logoImage} />
             <View>
               <Text style={styles.brandTitle}>Calculadora Inmobiliaria</Text>
               <Text style={styles.brandSubtitle}>Alexandra Marín Bienes Raíces</Text>
