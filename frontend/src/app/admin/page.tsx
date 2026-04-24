@@ -4,13 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import Pagination from "@/components/ui/Pagination";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { apiClient } from "@/lib/api-client";
+import { useDebounce } from "@/hooks/useDebounce";
 import type {
   AuthUser,
   CreateUserPayload,
+  PaginatedUsers,
   UpdateUserPayload,
   UserRole,
+  UsersStats,
+  UserStatusFilter,
 } from "@/types/auth.types";
 
 export default function AdminPage() {
@@ -21,22 +26,55 @@ export default function AdminPage() {
   );
 }
 
+const TIME_ZONE = "America/Bogota";
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "Sin límite";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString("es-CO", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function toInputDate(value: string | null | undefined): string {
   if (!value) return "";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+  if (!y || !m || !day) return "";
+  return `${y}-${m}-${day}`;
+}
+
+function toEndOfDayIsoColombia(dateInput: string): string {
+  return `${dateInput}T23:59:59.999-05:00`;
+}
+
+function getUserStatus(user: AuthUser, now = new Date()): Exclude<UserStatusFilter, "all"> {
+  if (!user.isActive) return "disabled";
+  if (user.expiresAt && new Date(user.expiresAt) <= now) return "expired";
+  return "active";
 }
 
 function AdminContent() {
-  const [users, setUsers] = useState<AuthUser[]>([]);
+  const [paginated, setPaginated] = useState<PaginatedUsers | null>(null);
+  const [stats, setStats] = useState<UsersStats>({
+    total: 0,
+    active: 0,
+    expired: 0,
+    disabled: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -44,15 +82,44 @@ function AdminContent() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<UserStatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  const debouncedSearch = useDebounce(searchQuery, 350);
+
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await apiClient.get<AuthUser[]>("/users");
-      setUsers(data);
+      setError(null);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        status: statusFilter,
+      });
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+
+      const data = await apiClient.get<PaginatedUsers>(`/users?${params.toString()}`);
+      setPaginated(data);
+
+      // Si el admin borró/creó y la página actual ya no existe, retrocedemos.
+      if (data.page > data.totalPages) {
+        setPage(data.totalPages);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error cargando usuarios");
     } finally {
       setIsLoading(false);
+    }
+  }, [page, limit, debouncedSearch, statusFilter]);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const s = await apiClient.get<UsersStats>("/users/stats");
+      setStats(s);
+    } catch {
+      // Silencio: las stats son informativas, un fallo no debe bloquear la UI.
     }
   }, []);
 
@@ -60,54 +127,64 @@ function AdminContent() {
     loadUsers();
   }, [loadUsers]);
 
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Volver a la página 1 cuando cambia búsqueda o filtro.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
   const notify = useCallback((msg: string) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(null), 3000);
   }, []);
 
-  const handleCreated = useCallback(
-    (user: AuthUser) => {
-      setUsers((prev) => [user, ...prev]);
-      setShowCreate(false);
-      notify("Usuario creado correctamente");
-    },
-    [notify],
-  );
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadUsers(), loadStats()]);
+  }, [loadUsers, loadStats]);
 
-  const handleUpdated = useCallback(
-    (user: AuthUser) => {
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
-      setEditingUser(null);
-      notify("Usuario actualizado correctamente");
-    },
-    [notify],
-  );
+  const handleCreated = useCallback(async () => {
+    setShowCreate(false);
+    notify("Usuario creado correctamente");
+    await refreshAll();
+  }, [notify, refreshAll]);
+
+  const handleUpdated = useCallback(async () => {
+    setEditingUser(null);
+    notify("Usuario actualizado correctamente");
+    await refreshAll();
+  }, [notify, refreshAll]);
 
   const handleDelete = useCallback(
     async (user: AuthUser) => {
       if (!confirm(`¿Eliminar al usuario ${user.email}?`)) return;
       try {
         await apiClient.delete(`/users/${user.id}`);
-        setUsers((prev) => prev.filter((u) => u.id !== user.id));
         notify("Usuario eliminado");
+        await refreshAll();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error eliminando usuario");
       }
     },
-    [notify],
+    [notify, refreshAll],
   );
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const total = users.length;
-    const active = users.filter(
-      (u) => u.isActive && (!u.expiresAt || new Date(u.expiresAt) > now),
-    ).length;
-    const expired = users.filter(
-      (u) => u.expiresAt && new Date(u.expiresAt) <= now,
-    ).length;
-    return { total, active, expired };
-  }, [users]);
+  const users = paginated?.data ?? [];
+  const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== "all";
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+  };
+
+  const headerDescription = useMemo(() => {
+    if (!paginated) return "Listado de cuentas registradas";
+    if (hasActiveFilters) {
+      return `${paginated.total} coincidencia${paginated.total === 1 ? "" : "s"} encontrada${paginated.total === 1 ? "" : "s"}`;
+    }
+    return `${paginated.total} cuenta${paginated.total === 1 ? "" : "s"} registrada${paginated.total === 1 ? "" : "s"}`;
+  }, [paginated, hasActiveFilters]);
 
   return (
     <>
@@ -123,10 +200,35 @@ function AdminContent() {
           <Button onClick={() => setShowCreate(true)}>+ Nuevo usuario</Button>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <StatCard label="Total usuarios" value={stats.total} tone="default" />
-          <StatCard label="Activos" value={stats.active} tone="success" />
-          <StatCard label="Expirados" value={stats.expired} tone="danger" />
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Total usuarios"
+            value={stats.total}
+            tone="default"
+            active={statusFilter === "all"}
+            onClick={() => setStatusFilter("all")}
+          />
+          <StatCard
+            label="Activos"
+            value={stats.active}
+            tone="success"
+            active={statusFilter === "active"}
+            onClick={() => setStatusFilter("active")}
+          />
+          <StatCard
+            label="Expirados"
+            value={stats.expired}
+            tone="danger"
+            active={statusFilter === "expired"}
+            onClick={() => setStatusFilter("expired")}
+          />
+          <StatCard
+            label="Desactivados"
+            value={stats.disabled}
+            tone="muted"
+            active={statusFilter === "disabled"}
+            onClick={() => setStatusFilter("disabled")}
+          />
         </div>
 
         {error && (
@@ -140,87 +242,180 @@ function AdminContent() {
           </div>
         )}
 
-        <Card className="mt-6" title="Usuarios" description="Listado de cuentas registradas">
-          {isLoading ? (
+        <Card className="mt-6" title="Usuarios" description={headerDescription}>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <svg
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por email o nombre..."
+                className="block w-full rounded-lg border border-border bg-card py-2 pl-9 pr-9 text-sm text-foreground placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted hover:bg-foreground/5 hover:text-foreground"
+                  aria-label="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as UserStatusFilter)}
+              className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-52"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="active">Solo activos</option>
+              <option value="expired">Solo expirados</option>
+              <option value="disabled">Solo desactivados</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-card-hover"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+
+          {isLoading && !paginated ? (
             <p className="text-sm text-muted">Cargando...</p>
           ) : users.length === 0 ? (
-            <p className="text-sm text-muted">No hay usuarios aún.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
-                    <th className="py-3 pr-3">Usuario</th>
-                    <th className="py-3 pr-3">Rol</th>
-                    <th className="py-3 pr-3">Estado</th>
-                    <th className="py-3 pr-3">Expira</th>
-                    <th className="py-3 pr-3">Último ingreso</th>
-                    <th className="py-3 pr-3 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => {
-                    const expired = u.expiresAt && new Date(u.expiresAt) <= new Date();
-                    return (
-                      <tr key={u.id} className="border-b border-border/60 last:border-0">
-                        <td className="py-3 pr-3">
-                          <div className="font-medium text-foreground">{u.fullName}</div>
-                          <div className="text-xs text-muted">{u.email}</div>
-                        </td>
-                        <td className="py-3 pr-3">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                              u.role === "admin"
-                                ? "bg-primary/10 text-primary"
-                                : "bg-foreground/5 text-foreground"
-                            }`}
-                          >
-                            {u.role === "admin" ? "Admin" : "Estudiante"}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-3">
-                          {!u.isActive ? (
-                            <span className="inline-flex rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                              Desactivado
-                            </span>
-                          ) : expired ? (
-                            <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-                              Expirado
-                            </span>
-                          ) : (
-                            <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                              Activo
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 pr-3 text-foreground">{formatDate(u.expiresAt)}</td>
-                        <td className="py-3 pr-3 text-muted">
-                          {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Nunca"}
-                        </td>
-                        <td className="py-3 pr-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => setEditingUser(u)}
-                              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-card-hover"
-                            >
-                              Editar
-                            </button>
-                            {u.role !== "admin" && (
-                              <button
-                                onClick={() => handleDelete(u)}
-                                className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger/10 hover:border-danger/40"
-                              >
-                                Eliminar
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-10 text-center">
+              <p className="text-sm font-medium text-foreground">
+                {hasActiveFilters
+                  ? "No encontramos usuarios con esos criterios"
+                  : "No hay usuarios aún"}
+              </p>
+              {hasActiveFilters && (
+                <>
+                  <p className="text-xs text-muted">
+                    Revisa el texto de búsqueda o cambia el filtro de estado.
+                  </p>
+                  <button
+                    onClick={clearFilters}
+                    className="mt-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-card-hover"
+                  >
+                    Limpiar filtros
+                  </button>
+                </>
+              )}
             </div>
+          ) : (
+            <>
+              <div
+                className={`overflow-x-auto transition-opacity ${isLoading ? "opacity-60" : "opacity-100"}`}
+              >
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+                      <th className="py-3 pr-3">Usuario</th>
+                      <th className="py-3 pr-3">Rol</th>
+                      <th className="py-3 pr-3">Estado</th>
+                      <th className="py-3 pr-3">Expira</th>
+                      <th className="py-3 pr-3">Último ingreso</th>
+                      <th className="py-3 pr-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => {
+                      const status = getUserStatus(u);
+                      return (
+                        <tr key={u.id} className="border-b border-border/60 last:border-0">
+                          <td className="py-3 pr-3">
+                            <div className="font-medium text-foreground">{u.fullName}</div>
+                            <div className="text-xs text-muted">{u.email}</div>
+                          </td>
+                          <td className="py-3 pr-3">
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                u.role === "admin"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-foreground/5 text-foreground"
+                              }`}
+                            >
+                              {u.role === "admin" ? "Admin" : "Estudiante"}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-3">
+                            {status === "disabled" ? (
+                              <span className="inline-flex rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+                                Desactivado
+                              </span>
+                            ) : status === "expired" ? (
+                              <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                                Expirado
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                                Activo
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 pr-3 text-foreground">{formatDate(u.expiresAt)}</td>
+                          <td className="py-3 pr-3 text-muted">
+                            {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Nunca"}
+                          </td>
+                          <td className="py-3 pr-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setEditingUser(u)}
+                                className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-card-hover"
+                              >
+                                Editar
+                              </button>
+                              {u.role !== "admin" && (
+                                <button
+                                  onClick={() => handleDelete(u)}
+                                  className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger/10 hover:border-danger/40"
+                                >
+                                  Eliminar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {paginated && (
+                <Pagination
+                  page={paginated.page}
+                  totalPages={paginated.totalPages}
+                  total={paginated.total}
+                  limit={paginated.limit}
+                  onPageChange={setPage}
+                  onLimitChange={(n) => {
+                    setLimit(n);
+                    setPage(1);
+                  }}
+                />
+              )}
+            </>
           )}
         </Card>
       </main>
@@ -230,8 +425,8 @@ function AdminContent() {
           title="Crear nuevo usuario"
           onClose={() => setShowCreate(false)}
           onSubmit={async (values) => {
-            const user = await apiClient.post<AuthUser>("/users", values);
-            handleCreated(user);
+            await apiClient.post<AuthUser>("/users", values);
+            await handleCreated();
           }}
           isCreate
         />
@@ -246,8 +441,8 @@ function AdminContent() {
             const { email: _email, password, ...rest } = values;
             const payload: UpdateUserPayload = { ...rest };
             if (password) payload.password = password;
-            const user = await apiClient.patch<AuthUser>(`/users/${editingUser.id}`, payload);
-            handleUpdated(user);
+            await apiClient.patch<AuthUser>(`/users/${editingUser.id}`, payload);
+            await handleUpdated();
           }}
         />
       )}
@@ -259,22 +454,38 @@ function StatCard({
   label,
   value,
   tone,
+  active = false,
+  onClick,
 }: {
   label: string;
   value: number;
-  tone: "default" | "success" | "danger";
+  tone: "default" | "success" | "danger" | "muted";
+  active?: boolean;
+  onClick?: () => void;
 }) {
   const toneClass =
     tone === "success"
       ? "text-success"
       : tone === "danger"
         ? "text-danger"
-        : "text-foreground";
+        : tone === "muted"
+          ? "text-muted"
+          : "text-foreground";
+
+  const ringClass = active ? "ring-2 ring-primary/40 border-primary/40" : "";
+  const interactiveClass = onClick
+    ? "cursor-pointer hover:border-primary/40 hover:shadow transition-all"
+    : "";
+
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-xl border border-border bg-card p-4 text-left shadow-sm ${ringClass} ${interactiveClass}`}
+    >
       <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
       <p className={`mt-1 text-2xl font-semibold ${toneClass}`}>{value}</p>
-    </div>
+    </button>
   );
 }
 
@@ -311,7 +522,7 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
         password,
         role,
         isActive,
-        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        expiresAt: expiresAt ? toEndOfDayIsoColombia(expiresAt) : null,
       };
       await onSubmit(values);
     } catch (err) {
@@ -420,7 +631,6 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
           </div>
         </form>
       </div>
-
     </div>
   );
 }

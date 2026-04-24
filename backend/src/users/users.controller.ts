@@ -6,10 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
+import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -28,9 +30,17 @@ export class UsersController {
   }
 
   @Get()
-  async findAll() {
-    const users = await this.usersService.findAll();
-    return users.map((u) => this.usersService.sanitize(u));
+  async findAll(@Query() query: FindUsersQueryDto) {
+    const result = await this.usersService.findAll(query);
+    return {
+      ...result,
+      data: result.data.map((u) => this.usersService.sanitize(u)),
+    };
+  }
+
+  @Get('stats')
+  async stats() {
+    return this.usersService.getStats();
   }
 
   @Get(':id')

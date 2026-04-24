@@ -31,3 +31,20 @@ export interface UpdateUserPayload {
   isActive?: boolean;
   expiresAt?: string | null;
 }
+
+export type UserStatusFilter = "all" | "active" | "expired" | "disabled";
+
+export interface PaginatedUsers {
+  data: AuthUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface UsersStats {
+  total: number;
+  active: number;
+  expired: number;
+  disabled: number;
+}

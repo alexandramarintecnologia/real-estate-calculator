@@ -7,10 +7,29 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument, UserRole } from './schemas/user.schema.js';
 import type { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
+import {
+  FindUsersQueryDto,
+  UserStatusFilter,
+} from './dto/find-users-query.dto.js';
+
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface UsersStats {
+  total: number;
+  active: number;
+  expired: number;
+  disabled: number;
+}
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -62,8 +81,85 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().sort({ createdAt: -1 }).exec();
+  async findAll(
+    query: FindUsersQueryDto = {},
+  ): Promise<PaginatedResult<UserDocument>> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const filter = this.buildFilter(query);
+
+    const [data, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.userModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  async getStats(): Promise<UsersStats> {
+    const now = new Date();
+    const [total, disabled, expired, active] = await Promise.all([
+      this.userModel.countDocuments(),
+      this.userModel.countDocuments({ isActive: false }),
+      this.userModel.countDocuments({
+        isActive: true,
+        expiresAt: { $ne: null, $lte: now },
+      }),
+      this.userModel.countDocuments({
+        isActive: true,
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+      }),
+    ]);
+
+    return { total, active, expired, disabled };
+  }
+
+  private buildFilter(query: FindUsersQueryDto): FilterQuery<UserDocument> {
+    const filter: FilterQuery<UserDocument> = {};
+    const now = new Date();
+
+    if (query.search && query.search.trim().length > 0) {
+      const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter.$or = [{ email: regex }, { fullName: regex }];
+    }
+
+    switch (query.status) {
+      case UserStatusFilter.ACTIVE:
+        filter.isActive = true;
+        filter.$and = [
+          ...(filter.$and ?? []),
+          {
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+          },
+        ];
+        break;
+      case UserStatusFilter.EXPIRED:
+        filter.isActive = true;
+        filter.expiresAt = { $ne: null, $lte: now };
+        break;
+      case UserStatusFilter.DISABLED:
+        filter.isActive = false;
+        break;
+      case UserStatusFilter.ALL:
+      default:
+        break;
+    }
+
+    return filter;
   }
 
   async findById(id: string): Promise<UserDocument> {
