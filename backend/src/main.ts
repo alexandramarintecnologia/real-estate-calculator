@@ -16,9 +16,12 @@ async function bootstrap() {
   );
 
   const config = app.get(ConfigService);
-  const corsOrigin = config.get<string>('CORS_ORIGIN', 'http://localhost:3001');
+  const corsOrigin = config.get<string>('CORS_ORIGIN', 'http://localhost:3000');
+  
+  // Convertimos la cadena separada por comas en un array de orígenes
+  const origins = corsOrigin.split(',').map((o) => o.trim());
 
-  app.enableCors({ origin: corsOrigin, credentials: true });
+  app.enableCors({ origin: origins, credentials: true });
   app.setGlobalPrefix('api/v1');
 
   const port = config.get<number>('PORT', 3000);
