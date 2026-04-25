@@ -63,7 +63,14 @@ function toEndOfDayIsoColombia(dateInput: string): string {
 
 function getUserStatus(user: AuthUser, now = new Date()): Exclude<UserStatusFilter, "all"> {
   if (!user.isActive) return "disabled";
-  if (user.expiresAt && new Date(user.expiresAt) <= now) return "expired";
+  if (user.expiresAt) {
+    const expiresDate = new Date(user.expiresAt);
+    if (expiresDate <= now) return "expired";
+    
+    const fifteenDaysFromNow = new Date(now);
+    fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
+    if (expiresDate <= fifteenDaysFromNow) return "expiring_soon";
+  }
   return "active";
 }
 
@@ -98,6 +105,7 @@ function AdminContent() {
     active: 0,
     expired: 0,
     disabled: 0,
+    expiringSoon: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,7 +259,7 @@ function AdminContent() {
           <Button onClick={() => setShowCreate(true)}>+ Nuevo usuario</Button>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
             label="Total usuarios"
             value={stats.total}
@@ -265,6 +273,13 @@ function AdminContent() {
             tone="success"
             active={statusFilter === "active"}
             onClick={() => setStatusFilter("active")}
+          />
+          <StatCard
+            label="Próximos a expirar"
+            value={stats.expiringSoon}
+            tone="warning"
+            active={statusFilter === "expiring_soon"}
+            onClick={() => setStatusFilter("expiring_soon")}
           />
           <StatCard
             label="Expirados"
@@ -335,6 +350,7 @@ function AdminContent() {
             >
               <option value="all">Todos los estados</option>
               <option value="active">Solo activos</option>
+              <option value="expiring_soon">Próximos a expirar</option>
               <option value="expired">Solo expirados</option>
               <option value="disabled">Solo desactivados</option>
             </select>
@@ -397,6 +413,7 @@ function AdminContent() {
                           <td className="py-3 pr-3">
                             <div className="font-medium text-foreground">{u.fullName}</div>
                             <div className="text-xs text-muted">{u.email}</div>
+                            {u.phone && <div className="text-xs text-muted/80">{u.phone}</div>}
                           </td>
                           <td className="py-3 pr-3">
                             <span
@@ -416,8 +433,12 @@ function AdminContent() {
                                   Desactivado
                                 </span>
                               ) : status === "expired" ? (
-                                <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                                <span className="inline-flex rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
                                   Expirado
+                                </span>
+                              ) : status === "expiring_soon" ? (
+                                <span className="inline-flex rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                                  Próximo a expirar
                                 </span>
                               ) : (
                                 <span className="inline-flex rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
@@ -528,7 +549,7 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  tone: "default" | "success" | "danger" | "muted";
+  tone: "default" | "success" | "danger" | "muted" | "warning";
   active?: boolean;
   onClick?: () => void;
 }) {
@@ -537,9 +558,11 @@ function StatCard({
       ? "text-success"
       : tone === "danger"
         ? "text-danger"
-        : tone === "muted"
-          ? "text-muted"
-          : "text-foreground";
+        : tone === "warning"
+          ? "text-warning"
+          : tone === "muted"
+            ? "text-muted"
+            : "text-foreground";
 
   const ringClass = active ? "ring-2 ring-primary/40 border-primary/40" : "";
   const interactiveClass = onClick
@@ -573,6 +596,7 @@ interface UserFormModalProps {
 function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserFormModalProps) {
   const [fullName, setFullName] = useState(initial?.fullName ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>(initial?.role ?? "student");
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
@@ -588,6 +612,7 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
       const values: UserFormValues = {
         fullName,
         email,
+        phone,
         role,
         isActive,
         expiresAt: expiresAt ? toEndOfDayIsoColombia(expiresAt) : null,
@@ -635,6 +660,16 @@ function UserFormModal({ title, initial, isCreate, onClose, onSubmit }: UserForm
               disabled={!isCreate}
               onChange={(e) => setEmail(e.target.value)}
               className="block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            />
+          </Field>
+
+          <Field label="Número de teléfono (opcional)">
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+57 300 000 0000"
+              className="block w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </Field>
 

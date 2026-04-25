@@ -29,6 +29,7 @@ export interface UsersStats {
   active: number;
   expired: number;
   disabled: number;
+  expiringSoon: number;
 }
 
 @Injectable()
@@ -114,7 +115,10 @@ export class UsersService implements OnModuleInit {
 
   async getStats(): Promise<UsersStats> {
     const now = new Date();
-    const [total, disabled, expired, active] = await Promise.all([
+    const fifteenDaysFromNow = new Date();
+    fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
+
+    const [total, disabled, expired, active, expiringSoon] = await Promise.all([
       this.userModel.countDocuments(),
       this.userModel.countDocuments({ isActive: false }),
       this.userModel.countDocuments({
@@ -125,9 +129,13 @@ export class UsersService implements OnModuleInit {
         isActive: true,
         $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
       }),
+      this.userModel.countDocuments({
+        isActive: true,
+        expiresAt: { $gt: now, $lte: fifteenDaysFromNow },
+      }),
     ]);
 
-    return { total, active, expired, disabled };
+    return { total, active, expired, disabled, expiringSoon };
   }
 
   private buildFilter(query: FindUsersQueryDto): FilterQuery<UserDocument> {
@@ -150,6 +158,13 @@ export class UsersService implements OnModuleInit {
           },
         ];
         break;
+      case UserStatusFilter.EXPIRING_SOON: {
+        const fifteenDaysFromNow = new Date();
+        fifteenDaysFromNow.setDate(fifteenDaysFromNow.getDate() + 15);
+        filter.isActive = true;
+        filter.expiresAt = { $gt: now, $lte: fifteenDaysFromNow };
+        break;
+      }
       case UserStatusFilter.EXPIRED:
         filter.isActive = true;
         filter.expiresAt = { $ne: null, $lte: now };
@@ -233,6 +248,7 @@ export class UsersService implements OnModuleInit {
       id: user._id?.toString(),
       email: user.email,
       fullName: user.fullName,
+      phone: user.phone,
       role: user.role,
       isActive: user.isActive,
       expiresAt: user.expiresAt,

@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: UserRole;
   isActive: boolean;
   expiresAt: string | null;
@@ -21,6 +22,7 @@ export interface CreateUserPayload {
   email: string;
   password?: string;
   fullName: string;
+  phone?: string;
   role?: UserRole;
   expiresAt?: string | null;
 }
@@ -28,12 +30,13 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   fullName?: string;
   password?: string;
+  phone?: string;
   role?: UserRole;
   isActive?: boolean;
   expiresAt?: string | null;
 }
 
-export type UserStatusFilter = "all" | "active" | "expired" | "disabled";
+export type UserStatusFilter = "all" | "active" | "expired" | "disabled" | "expiring_soon";
 
 export interface PaginatedUsers {
   data: AuthUser[];
@@ -48,4 +51,5 @@ export interface UsersStats {
   active: number;
   expired: number;
   disabled: number;
+  expiringSoon: number;
 }

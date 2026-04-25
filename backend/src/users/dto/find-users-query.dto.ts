@@ -6,6 +6,7 @@ export enum UserStatusFilter {
   ACTIVE = 'active',
   EXPIRED = 'expired',
   DISABLED = 'disabled',
+  EXPIRING_SOON = 'expiring_soon',
 }
 
 export class FindUsersQueryDto {

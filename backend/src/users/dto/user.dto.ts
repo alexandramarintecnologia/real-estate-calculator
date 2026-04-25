@@ -23,6 +23,10 @@ export class CreateUserDto {
   fullName!: string;
 
   @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
 
@@ -40,6 +44,10 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(2)
   fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsOptional()
   @IsString()

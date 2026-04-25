@@ -22,6 +22,9 @@ export class User {
   @Prop({ required: true })
   fullName!: string;
 
+  @Prop({ default: '' })
+  phone!: string;
+
   @Prop({ type: String, enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
 
