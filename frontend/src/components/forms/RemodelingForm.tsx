@@ -129,7 +129,7 @@ export default function RemodelingForm({
           />
           {data.selectedScenario === 3 && (
             <Input
-              label="Porcentaje de administración"
+              label="Porcentaje de administración (opcional)"
               type="number"
               min={10}
               max={25}

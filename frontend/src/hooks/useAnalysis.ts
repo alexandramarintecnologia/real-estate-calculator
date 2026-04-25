@@ -13,7 +13,6 @@ import type {
 } from "@/types/analysis.types";
 
 const defaultProperty: PropertyData = {
-  direccion: "",
   alcobas: 0,
   banos: 0,
   metrosCuadrados: 0,
@@ -23,6 +22,8 @@ const defaultProperty: PropertyData = {
   precioCompra: 0,
   arriendoProyectado: 0,
   precioVentaProyectado: 0,
+  precioVentaType: "percent",
+  precioVentaPercent: 30,
   mesesProyectadosVenta: 6,
 };
 
@@ -30,7 +31,12 @@ const defaultRemodeling: RemodelingScenario = {
   selectedScenario: 1,
 };
 
-const defaultExpenses: ProjectExpenses = {};
+const defaultExpenses: ProjectExpenses = {
+  notaryFeesValue: 3,
+  notaryFeesType: "percent",
+  brokerCommissionValue: 1,
+  brokerCommissionType: "percent",
+};
 
 const defaultQualitative: QualitativeEvaluation = {
   entorno: QualitativeScore.BUENO,

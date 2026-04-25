@@ -4,6 +4,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { formatCOP } from "@/lib/formatters";
 import type { PropertyData } from "@/types/analysis.types";
 
 interface PropertyFormProps {
@@ -22,8 +23,22 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
     if (!isNaN(n)) update(key, n as PropertyData[typeof key]);
   };
 
+  const handlePrecioCompraChange = (val: string) => {
+    const n = val === "" ? 0 : Number(val);
+    if (!isNaN(n)) {
+      const updates: Partial<PropertyData> = { precioCompra: n };
+      const currentVentaType = data.precioVentaType ?? "percent";
+      if (currentVentaType === "percent") {
+        const percent = data.precioVentaPercent ?? 30;
+        updates.precioVentaProyectado = n * (1 + percent / 100);
+      }
+      onChange({ ...data, ...updates });
+    }
+  };
+
+  const ventaType = data.precioVentaType ?? "percent";
+
   const isValid =
-    data.direccion.trim() !== "" &&
     data.metrosCuadrados > 0 &&
     data.precioCompra > 0 &&
     data.precioVentaProyectado > 0 &&
@@ -35,32 +50,31 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Input
-              label="Dirección"
-              value={data.direccion}
+              label="Dirección (opcional)"
+              value={data.direccion ?? ""}
               onChange={(e) => update("direccion", e.target.value)}
               placeholder="Ej: Calle 100 #15-20, Bogotá"
-              required
             />
           </div>
           <Input
-            label="Link del portal inmobiliario"
+            label="Link del portal inmobiliario (opcional)"
             value={data.linkPortal ?? ""}
             onChange={(e) => update("linkPortal", e.target.value)}
             placeholder="https://..."
           />
           <Input
-            label="Torre"
+            label="Torre (opcional)"
             value={data.torre ?? ""}
             onChange={(e) => update("torre", e.target.value)}
           />
           <Input
-            label="Piso"
+            label="Piso (opcional)"
             type="number"
             value={data.piso ?? ""}
             onChange={(e) => numField("piso", e.target.value)}
           />
           <Input
-            label="Número de Apto"
+            label="Número de Apto (opcional)"
             value={data.numeroApto ?? ""}
             onChange={(e) => update("numeroApto", e.target.value)}
           />
@@ -88,7 +102,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             required
           />
           <Input
-            label="m² que necesitan remodelación"
+            label="m² que necesitan remodelación (opcional)"
             type="number"
             min={0}
             value={data.m2Remodelacion || ""}
@@ -107,15 +121,15 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
         </div>
       </Card>
 
-      <Card title="Datos del Propietario" description="Información de contacto (opcional)">
+      <Card title="Datos del Propietario" description="Información de contacto">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Nombre del propietario"
+            label="Nombre del propietario (opcional)"
             value={data.nombrePropietario ?? ""}
             onChange={(e) => update("nombrePropietario", e.target.value)}
           />
           <Input
-            label="Celular"
+            label="Celular (opcional)"
             value={data.celular ?? ""}
             onChange={(e) => update("celular", e.target.value)}
             placeholder="300 123 4567"
@@ -130,22 +144,78 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             type="number"
             min={0}
             value={data.precioCompra || ""}
-            onChange={(e) => numField("precioCompra", e.target.value)}
+            onChange={(e) => handlePrecioCompraChange(e.target.value)}
             prefix="$"
             hint="Precio del inmueble en COP"
             required
           />
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">
+              Precio de venta proyectado {ventaType === "percent" ? "(Rentabilidad %)" : "(Monto en $)"}
+            </label>
+            <div className="flex">
+              <input
+                type="number"
+                min={0}
+                value={ventaType === "percent" ? (data.precioVentaPercent ?? "") : (data.precioVentaProyectado || "")}
+                onChange={(e) => {
+                  const val = e.target.value ? Number(e.target.value) : 0;
+                  if (ventaType === "percent") {
+                    const newProyectado = data.precioCompra * (1 + val / 100);
+                    onChange({
+                      ...data,
+                      precioVentaPercent: val,
+                      precioVentaProyectado: newProyectado
+                    });
+                  } else {
+                    onChange({
+                      ...data,
+                      precioVentaProyectado: val
+                    });
+                  }
+                }}
+                className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder={ventaType === "percent" ? "Ej: 30" : "Ej: 400000000"}
+              />
+              <select
+                value={ventaType}
+                onChange={(e) => {
+                  const newType = e.target.value as "percent" | "fixed";
+                  if (newType === "percent") {
+                    const percent = data.precioVentaPercent ?? 30;
+                    const newProyectado = data.precioCompra * (1 + percent / 100);
+                    onChange({
+                      ...data,
+                      precioVentaType: newType,
+                      precioVentaPercent: percent,
+                      precioVentaProyectado: newProyectado
+                    });
+                  } else {
+                    onChange({
+                      ...data,
+                      precioVentaType: newType
+                    });
+                  }
+                }}
+                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="percent">%</option>
+                <option value="fixed">$ (COP)</option>
+              </select>
+            </div>
+            {ventaType === "percent" && data.precioVentaProyectado > 0 && (
+              <p className="text-xs text-muted">
+                Precio calculado: {formatCOP(data.precioVentaProyectado)}
+              </p>
+            )}
+            {ventaType === "percent" && (
+              <p className="text-xs text-muted">
+                Ingresa el porcentaje de rentabilidad esperada (ej: 20 al 50%) sobre el precio de compra.
+              </p>
+            )}
+          </div>
           <Input
-            label="Precio de venta proyectado"
-            type="number"
-            min={0}
-            value={data.precioVentaProyectado || ""}
-            onChange={(e) => numField("precioVentaProyectado", e.target.value)}
-            prefix="$"
-            required
-          />
-          <Input
-            label="Arriendo proyectado (mensual)"
+            label="Arriendo proyectado (mensual) (opcional)"
             type="number"
             min={0}
             value={data.arriendoProyectado || ""}
@@ -154,7 +224,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             hint="Canon de arriendo mensual estimado"
           />
           <Input
-            label="Gastos de posesión (mensual)"
+            label="Gastos de posesión (mensual) (opcional)"
             type="number"
             min={0}
             value={data.gastosPosesionMensual || ""}
@@ -176,17 +246,8 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
 
       <Card title="Observaciones" description="Notas adicionales sobre la propiedad">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Puntuación personal"
-            type="number"
-            min={0}
-            max={10}
-            value={data.puntuacionPersonal ?? ""}
-            onChange={(e) => numField("puntuacionPersonal", e.target.value)}
-            hint="De 0 a 10"
-          />
           <Select
-            label="Estado de negociación"
+            label="Estado de negociación (opcional)"
             options={[
               { value: "pendiente", label: "Pendiente" },
               { value: "en_negociacion", label: "En negociación" },
@@ -198,7 +259,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
           />
           <div className="sm:col-span-2">
             <Input
-              label="Observaciones"
+              label="Observaciones (opcional)"
               value={data.observaciones ?? ""}
               onChange={(e) => update("observaciones", e.target.value)}
               placeholder="Notas adicionales..."

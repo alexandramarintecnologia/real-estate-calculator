@@ -13,13 +13,11 @@ export class ProfitabilityCalculator {
     const { projectedSalePrice, totalProjectCost, monthlyRent } = input;
 
     const grossProfit = projectedSalePrice - totalProjectCost;
-    const roi = totalProjectCost > 0
-      ? (grossProfit / totalProjectCost) * 100
-      : 0;
+    const roi =
+      totalProjectCost > 0 ? (grossProfit / totalProjectCost) * 100 : 0;
     const annualRentalIncome = monthlyRent * 12;
-    const capRate = totalProjectCost > 0
-      ? (annualRentalIncome / totalProjectCost) * 100
-      : 0;
+    const capRate =
+      totalProjectCost > 0 ? (annualRentalIncome / totalProjectCost) * 100 : 0;
 
     return {
       projectedSalePrice,

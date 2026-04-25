@@ -55,7 +55,10 @@ export class AnalyzePropertyUseCase {
       qualitative as unknown as QualitativeInput,
     );
 
-    const evaluation = this.investmentEval.evaluate(profitability, qualitativeResult);
+    const evaluation = this.investmentEval.evaluate(
+      profitability,
+      qualitativeResult,
+    );
 
     return {
       remodelingCosts,

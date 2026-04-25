@@ -21,9 +21,8 @@ export class QualitativeEvaluator {
   evaluate(scores: QualitativeInput): QualitativeResult {
     const values = Object.values(scores);
     const sum = values.reduce((acc, v) => acc + v, 0);
-    const average = values.length > 0
-      ? Math.round((sum / values.length) * 100) / 100
-      : 0;
+    const average =
+      values.length > 0 ? Math.round((sum / values.length) * 100) / 100 : 0;
 
     return {
       scores,

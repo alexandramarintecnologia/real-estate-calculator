@@ -40,8 +40,7 @@ export class AuthService {
         {
           statusCode: HttpStatus.PRECONDITION_REQUIRED,
           code: PASSWORD_NOT_SET_CODE,
-          message:
-            'Debes crear tu contraseña para acceder por primera vez.',
+          message: 'Debes crear tu contraseña para acceder por primera vez.',
           email: user.email,
         },
         HttpStatus.PRECONDITION_REQUIRED,

@@ -19,7 +19,7 @@ export enum QualitativeScore {
 
 export interface PropertyData {
   linkPortal?: string;
-  direccion: string;
+  direccion?: string;
   torre?: string;
   piso?: number;
   numeroApto?: string;
@@ -34,9 +34,10 @@ export interface PropertyData {
   precioCompra: number;
   arriendoProyectado: number;
   precioVentaProyectado: number;
+  precioVentaType?: 'percent' | 'fixed';
+  precioVentaPercent?: number;
   mesesProyectadosVenta: number;
   observaciones?: string;
-  puntuacionPersonal?: number;
   estadoNegociacion?: string;
 }
 

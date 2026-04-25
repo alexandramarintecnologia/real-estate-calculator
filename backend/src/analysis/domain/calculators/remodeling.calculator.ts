@@ -25,8 +25,10 @@ export class RemodelingCalculator {
         costPerM2 = input.customCostPerM2 ?? REMODELING_SCENARIOS[2].costPerM2;
         break;
       case 3: {
-        const baseCost = input.customCostPerM2 ?? REMODELING_SCENARIOS[3].baseCostPerM2;
-        effectiveAdminPercent = adminPercentage ?? REMODELING_SCENARIOS[3].defaultAdminPercent;
+        const baseCost =
+          input.customCostPerM2 ?? REMODELING_SCENARIOS[3].baseCostPerM2;
+        effectiveAdminPercent =
+          adminPercentage ?? REMODELING_SCENARIOS[3].defaultAdminPercent;
         costPerM2 = baseCost * (1 + effectiveAdminPercent / 100);
         break;
       }
@@ -40,7 +42,10 @@ export class RemodelingCalculator {
     };
   }
 
-  calculateAllScenarios(m2ToRemodel: number, adminPercentage?: number): RemodelingCost[] {
+  calculateAllScenarios(
+    m2ToRemodel: number,
+    adminPercentage?: number,
+  ): RemodelingCost[] {
     return [1, 2, 3].map((scenario) =>
       this.calculate({
         m2ToRemodel,

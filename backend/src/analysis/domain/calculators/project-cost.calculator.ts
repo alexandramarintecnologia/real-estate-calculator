@@ -19,19 +19,28 @@ export class ProjectCostCalculator {
   calculate(input: ProjectCostInput): ProjectCosts {
     // Calculo Escrituras
     let notaryFees = 0;
-    if (input.notaryFeesType === 'fixed' && input.notaryFeesValue !== undefined) {
+    if (
+      input.notaryFeesType === 'fixed' &&
+      input.notaryFeesValue !== undefined
+    ) {
       notaryFees = input.notaryFeesValue;
     } else {
-      const notaryPercent = input.notaryFeesValue ?? DEFAULT_PERCENTAGES.NOTARY_FEES_PERCENT;
+      const notaryPercent =
+        input.notaryFeesValue ?? DEFAULT_PERCENTAGES.NOTARY_FEES_PERCENT;
       notaryFees = input.purchasePrice * (notaryPercent / 100) * 2;
     }
 
     // Calculo Comision
     let brokerCommission = 0;
-    if (input.brokerCommissionType === 'fixed' && input.brokerCommissionValue !== undefined) {
+    if (
+      input.brokerCommissionType === 'fixed' &&
+      input.brokerCommissionValue !== undefined
+    ) {
       brokerCommission = input.brokerCommissionValue;
     } else {
-      const brokerPercent = input.brokerCommissionValue ?? DEFAULT_PERCENTAGES.BROKER_COMMISSION_PERCENT;
+      const brokerPercent =
+        input.brokerCommissionValue ??
+        DEFAULT_PERCENTAGES.BROKER_COMMISSION_PERCENT;
       brokerCommission = input.purchasePrice * (brokerPercent / 100);
     }
     const otherExpenses = input.otherExpenses ?? 0;

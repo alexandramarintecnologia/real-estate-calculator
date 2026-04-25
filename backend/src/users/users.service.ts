@@ -51,7 +51,9 @@ export class UsersService implements OnModuleInit {
 
     if (!adminEmail || !adminPassword) return;
 
-    const existing = await this.userModel.findOne({ email: adminEmail.toLowerCase() });
+    const existing = await this.userModel.findOne({
+      email: adminEmail.toLowerCase(),
+    });
     if (existing) return;
 
     const hashed = await bcrypt.hash(adminPassword, 10);
@@ -68,13 +70,18 @@ export class UsersService implements OnModuleInit {
   }
 
   async create(dto: CreateUserDto): Promise<UserDocument> {
-    const exists = await this.userModel.findOne({ email: dto.email.toLowerCase() });
+    const exists = await this.userModel.findOne({
+      email: dto.email.toLowerCase(),
+    });
     if (exists) {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
 
-    const hasPassword = typeof dto.password === 'string' && dto.password.length > 0;
-    const hashedPassword = hasPassword ? await bcrypt.hash(dto.password as string, 10) : '';
+    const hasPassword =
+      typeof dto.password === 'string' && dto.password.length > 0;
+    const hashedPassword = hasPassword
+      ? await bcrypt.hash(dto.password as string, 10)
+      : '';
 
     return this.userModel.create({
       ...dto,
@@ -143,7 +150,9 @@ export class UsersService implements OnModuleInit {
     const now = new Date();
 
     if (query.search && query.search.trim().length > 0) {
-      const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escaped = query.search
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       filter.$or = [{ email: regex }, { fullName: regex }];
     }
@@ -202,7 +211,9 @@ export class UsersService implements OnModuleInit {
       update.expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : null;
     }
 
-    const user = await this.userModel.findByIdAndUpdate(id, update, { new: true });
+    const user = await this.userModel.findByIdAndUpdate(id, update, {
+      new: true,
+    });
     if (!user) throw new NotFoundException('Usuario no encontrado');
     return user;
   }

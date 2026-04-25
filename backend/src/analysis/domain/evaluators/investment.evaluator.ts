@@ -21,7 +21,11 @@ export class InvestmentEvaluator {
     const capRateRating = this.rateCapRate(profitability.capRate);
     const zoneRating = qualitative.rating;
 
-    const overallRating = this.computeOverallRating(roiRating, capRateRating, zoneRating);
+    const overallRating = this.computeOverallRating(
+      roiRating,
+      capRateRating,
+      zoneRating,
+    );
     const decision = this.computeDecision(roiRating, zoneRating);
     const recommendations = this.buildRecommendations(
       profitability,
@@ -52,7 +56,11 @@ export class InvestmentEvaluator {
     return Rating.RIESGOSA;
   }
 
-  private computeOverallRating(roi: Rating, capRate: Rating, zone: Rating): Rating {
+  private computeOverallRating(
+    roi: Rating,
+    capRate: Rating,
+    zone: Rating,
+  ): Rating {
     const ratings = [roi, capRate, zone];
     const scores = ratings.map((r) => this.ratingToScore(r));
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -81,29 +89,47 @@ export class InvestmentEvaluator {
     const recs: string[] = [];
 
     if (roiRating === Rating.EXCELENTE) {
-      recs.push(`ROI de ${profitability.roi}% — Excelente retorno de inversión.`);
+      recs.push(
+        `ROI de ${profitability.roi}% — Excelente retorno de inversión.`,
+      );
     } else if (roiRating === Rating.BUENA) {
-      recs.push(`ROI de ${profitability.roi}% — Retorno aceptable. Evalúa si puedes negociar un mejor precio de compra.`);
+      recs.push(
+        `ROI de ${profitability.roi}% — Retorno aceptable. Evalúa si puedes negociar un mejor precio de compra.`,
+      );
     } else {
-      recs.push(`ROI de ${profitability.roi}% — Retorno bajo. Considera renegociar el precio o buscar otra propiedad.`);
+      recs.push(
+        `ROI de ${profitability.roi}% — Retorno bajo. Considera renegociar el precio o buscar otra propiedad.`,
+      );
     }
 
     if (capRateRating === Rating.EXCELENTE) {
-      recs.push(`Cap Rate de ${profitability.capRate}% — Excelente rentabilidad por arriendo.`);
+      recs.push(
+        `Cap Rate de ${profitability.capRate}% — Excelente rentabilidad por arriendo.`,
+      );
     } else if (capRateRating === Rating.BUENA) {
-      recs.push(`Cap Rate de ${profitability.capRate}% — Rentabilidad por arriendo aceptable.`);
+      recs.push(
+        `Cap Rate de ${profitability.capRate}% — Rentabilidad por arriendo aceptable.`,
+      );
     } else {
-      recs.push(`Cap Rate de ${profitability.capRate}% — Baja rentabilidad por arriendo. El plan B de arrendar podría no ser viable.`);
+      recs.push(
+        `Cap Rate de ${profitability.capRate}% — Baja rentabilidad por arriendo. El plan B de arrendar podría no ser viable.`,
+      );
     }
 
     if (zoneRating === Rating.RIESGOSA) {
-      recs.push('La zona no cumple con los estándares mínimos. Revisa entorno, seguridad y accesibilidad.');
+      recs.push(
+        'La zona no cumple con los estándares mínimos. Revisa entorno, seguridad y accesibilidad.',
+      );
     } else if (zoneRating === Rating.EXCELENTE) {
-      recs.push('La zona tiene excelentes condiciones de entorno, accesibilidad y servicios.');
+      recs.push(
+        'La zona tiene excelentes condiciones de entorno, accesibilidad y servicios.',
+      );
     }
 
     if (profitability.grossProfit < 0) {
-      recs.push('ALERTA: La ganancia bruta proyectada es negativa. Este proyecto generaría pérdidas.');
+      recs.push(
+        'ALERTA: La ganancia bruta proyectada es negativa. Este proyecto generaría pérdidas.',
+      );
     }
 
     return recs;
@@ -111,9 +137,12 @@ export class InvestmentEvaluator {
 
   private ratingToScore(rating: Rating): number {
     switch (rating) {
-      case Rating.EXCELENTE: return 3;
-      case Rating.BUENA: return 2;
-      case Rating.RIESGOSA: return 1;
+      case Rating.EXCELENTE:
+        return 3;
+      case Rating.BUENA:
+        return 2;
+      case Rating.RIESGOSA:
+        return 1;
     }
   }
 }

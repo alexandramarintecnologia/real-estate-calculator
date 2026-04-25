@@ -1,6 +1,9 @@
 import { InvestmentEvaluator } from './investment.evaluator.js';
 import { Rating, Decision } from '../types/analysis-result.type.js';
-import type { ProfitabilityMetrics, QualitativeResult } from '../types/analysis-result.type.js';
+import type {
+  ProfitabilityMetrics,
+  QualitativeResult,
+} from '../types/analysis-result.type.js';
 
 describe('InvestmentEvaluator', () => {
   let evaluator: InvestmentEvaluator;
@@ -9,7 +12,10 @@ describe('InvestmentEvaluator', () => {
     evaluator = new InvestmentEvaluator();
   });
 
-  const makeProfitability = (roi: number, capRate: number): ProfitabilityMetrics => ({
+  const makeProfitability = (
+    roi: number,
+    capRate: number,
+  ): ProfitabilityMetrics => ({
     projectedSalePrice: 300_000_000,
     grossProfit: 50_000_000,
     roi,
@@ -18,8 +24,9 @@ describe('InvestmentEvaluator', () => {
   });
 
   const makeQualitative = (rating: Rating): QualitativeResult => ({
-    scores: {} as any,
-    average: rating === Rating.EXCELENTE ? 3 : rating === Rating.BUENA ? 2 : 0.5,
+    scores: {},
+    average:
+      rating === Rating.EXCELENTE ? 3 : rating === Rating.BUENA ? 2 : 0.5,
     rating,
   });
 
@@ -64,7 +71,13 @@ describe('InvestmentEvaluator', () => {
 
   it('should generate recommendations', () => {
     const result = evaluator.evaluate(
-      { projectedSalePrice: 100_000_000, grossProfit: -10_000_000, roi: -5, annualRentalIncome: 6_000_000, capRate: 3 },
+      {
+        projectedSalePrice: 100_000_000,
+        grossProfit: -10_000_000,
+        roi: -5,
+        annualRentalIncome: 6_000_000,
+        capRate: 3,
+      },
       makeQualitative(Rating.RIESGOSA),
     );
 

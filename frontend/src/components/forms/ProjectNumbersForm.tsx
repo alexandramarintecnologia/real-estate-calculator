@@ -32,8 +32,13 @@ export default function ProjectNumbersForm({
           {/* Gastos de escrituracion */}
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">
-              Gastos de escrituración {notaryType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
+              Gastos de escrituración (opcional) {notaryType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
             </label>
+            <p className="text-xs text-muted">
+              {notaryType === "percent"
+                ? "Puedes cambiar a monto fijo en pesos ($) con el selector a la derecha."
+                : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
+            </p>
             <div className="flex">
               <input
                 type="number"
@@ -47,7 +52,7 @@ export default function ProjectNumbersForm({
                   })
                 }
                 className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder={notaryType === "percent" ? "Ej: 1.07" : "Ej: 3000000"}
+                placeholder={notaryType === "percent" ? "Ej: 3" : "Ej: 3000000"}
               />
               <select
                 value={notaryType}
@@ -65,16 +70,21 @@ export default function ProjectNumbersForm({
             </div>
             <p className="text-xs text-muted">
               {notaryType === "percent"
-                ? "Ingresa el valor en porcentaje (%). Predeterminado: 1.07%"
-                : "Ingresa el valor total a pagar en pesos"}
+                ? "Predeterminado: 3% aplicado a compra y a venta (sobre el precio de compra en cada tramo)."
+                : "Ingresa el monto total en pesos que pagarás por escrituración."}
             </p>
           </div>
 
           {/* Comision del asesor */}
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">
-              Comisión del asesor inmobiliario {brokerType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
+              Comisión del asesor inmobiliario (opcional) {brokerType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
             </label>
+            <p className="text-xs text-muted">
+              {brokerType === "percent"
+                ? "Puedes cambiar a monto fijo en pesos ($) con el selector a la derecha."
+                : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
+            </p>
             <div className="flex">
               <input
                 type="number"
@@ -88,7 +98,7 @@ export default function ProjectNumbersForm({
                   })
                 }
                 className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder={brokerType === "percent" ? "Ej: 3" : "Ej: 6000000"}
+                placeholder={brokerType === "percent" ? "Ej: 1" : "Ej: 6000000"}
               />
               <select
                 value={brokerType}
@@ -106,14 +116,14 @@ export default function ProjectNumbersForm({
             </div>
             <p className="text-xs text-muted">
               {brokerType === "percent"
-                ? "Ingresa el valor en porcentaje (%). Predeterminado: 3%"
-                : "Ingresa el valor total a pagar en pesos"}
+                ? "Predeterminado: 1% sobre el precio de compra del inmueble."
+                : "Ingresa el monto total en pesos de la comisión del asesor."}
             </p>
           </div>
 
           <div className="sm:col-span-2">
             <Input
-              label="Otros gastos (colchón)"
+              label="Otros gastos (colchón) (opcional)"
               type="number"
               min={0}
               value={data.otherExpenses ?? ""}
@@ -135,13 +145,13 @@ export default function ProjectNumbersForm({
           <div className="flex gap-3">
             <span className="shrink-0 text-primary">→</span>
             <p>
-              <strong>Escrituración:</strong> Si usas porcentaje (%), se calcula sobre el precio de compra, aplicado a compra y venta (y se asume que pagas la mitad). Si usas pesos ($), será el valor exacto ingresado.
+              <strong>Escrituración:</strong> Con porcentaje (%), el valor predeterminado es 3% sobre el precio de compra en la operación de compra y el mismo porcentaje en la de venta (el cálculo refleja ambas). Con pesos ($), es el monto exacto que ingreses. Puedes alternar entre % y $ con el selector.
             </p>
           </div>
           <div className="flex gap-3">
             <span className="shrink-0 text-primary">→</span>
             <p>
-              <strong>Comisión del asesor:</strong> Si usas porcentaje (%), se calcula sobre el precio del inmueble. Si usas pesos ($), será el valor exacto ingresado.
+              <strong>Comisión del asesor:</strong> Con porcentaje (%), el valor predeterminado es 1% sobre el precio de compra. Con pesos ($), es el monto exacto. Puedes alternar entre % y $ con el selector.
             </p>
           </div>
           <div className="flex gap-3">

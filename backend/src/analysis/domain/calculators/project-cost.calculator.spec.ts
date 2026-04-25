@@ -17,12 +17,16 @@ describe('ProjectCostCalculator', () => {
 
     expect(result.purchasePrice).toBe(200_000_000);
     expect(result.remodelingCost).toBe(50_000_000);
-    expect(result.notaryFees).toBe(Math.round(200_000_000 * 0.0107 * 2));
-    expect(result.brokerCommission).toBe(Math.round(200_000_000 * 0.03));
+    expect(result.notaryFees).toBe(Math.round(200_000_000 * 0.03 * 2));
+    expect(result.brokerCommission).toBe(Math.round(200_000_000 * 0.01));
     expect(result.totalOwnershipExpenses).toBe(3_000_000);
     expect(result.otherExpenses).toBe(0);
     expect(result.totalProjectCost).toBe(
-      200_000_000 + 50_000_000 + result.notaryFees + result.brokerCommission + 3_000_000,
+      200_000_000 +
+        50_000_000 +
+        result.notaryFees +
+        result.brokerCommission +
+        3_000_000,
     );
   });
 
