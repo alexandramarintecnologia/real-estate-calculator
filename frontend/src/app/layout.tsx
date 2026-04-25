@@ -45,10 +45,10 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/logo.png",
-        width: 892,
-        height: 600,
-        alt: "Alexandra Marín Bienes Raíces",
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Alexandra Marín Bienes Raíces — Calculadora Inmobiliaria",
       },
     ],
   },
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteTitle,
     description: siteDescription,
-    images: ["/logo.png"],
+    images: ["/og.png"],
   },
 };
 
