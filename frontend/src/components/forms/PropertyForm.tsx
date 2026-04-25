@@ -13,6 +13,17 @@ interface PropertyFormProps {
   onNext: () => void;
 }
 
+const clampArriendoPercent = (p: number) =>
+  Math.min(10, Math.max(7, Number.isFinite(p) ? p : 7));
+
+const monthlyRentFromAnnualPercent = (purchase: number, percent: number) =>
+  purchase > 0
+    ? Math.round((purchase * clampArriendoPercent(percent)) / 100 / 12)
+    : 0;
+
+const arriendoInputClass =
+  "block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
+
 export default function PropertyForm({ data, onChange, onNext }: PropertyFormProps) {
   const update = <K extends keyof PropertyData>(key: K, value: PropertyData[K]) => {
     onChange({ ...data, [key]: value });
@@ -32,11 +43,18 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
         const percent = data.precioVentaPercent ?? 30;
         updates.precioVentaProyectado = n * (1 + percent / 100);
       }
+      const currentArriendoType = data.arriendoType ?? "percent";
+      if (currentArriendoType === "percent") {
+        const ap = clampArriendoPercent(data.arriendoPercent ?? 7);
+        updates.arriendoPercent = ap;
+        updates.arriendoProyectado = monthlyRentFromAnnualPercent(n, ap);
+      }
       onChange({ ...data, ...updates });
     }
   };
 
   const ventaType = data.precioVentaType ?? "percent";
+  const arriendoType = data.arriendoType ?? "percent";
 
   const isValid =
     data.metrosCuadrados > 0 &&
@@ -215,13 +233,13 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             )}
           </div>
           <Input
-            label="Arriendo proyectado (mensual) (opcional)"
+            label="Meses proyectados para vender"
             type="number"
-            min={0}
-            value={data.arriendoProyectado || ""}
-            onChange={(e) => numField("arriendoProyectado", e.target.value)}
-            prefix="$"
-            hint="Canon de arriendo mensual estimado"
+            min={1}
+            value={data.mesesProyectadosVenta || ""}
+            onChange={(e) => numField("mesesProyectadosVenta", e.target.value)}
+            suffix="meses"
+            required
           />
           <Input
             label="Gastos de posesión (mensual) (opcional)"
@@ -232,15 +250,81 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             prefix="$"
             hint="Administración, servicios, etc."
           />
-          <Input
-            label="Meses proyectados para vender"
-            type="number"
-            min={1}
-            value={data.mesesProyectadosVenta || ""}
-            onChange={(e) => numField("mesesProyectadosVenta", e.target.value)}
-            suffix="meses"
-            required
-          />
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="block text-sm font-medium text-foreground">
+              Arriendo proyectado (mensual) (opcional){" "}
+              {arriendoType === "percent" ? "(% anual sobre compra)" : "(Monto en $)"}
+            </label>
+            <p className="text-xs text-muted">
+              {arriendoType === "percent"
+                ? "Puedes cambiar a monto fijo en pesos ($) con el selector a la derecha."
+                : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
+            </p>
+            <div className="flex max-w-full sm:max-w-md">
+              <input
+                type="number"
+                min={arriendoType === "percent" ? 7 : 0}
+                max={arriendoType === "percent" ? 10 : undefined}
+                step={arriendoType === "percent" ? 0.5 : 1}
+                value={
+                  arriendoType === "percent"
+                    ? (data.arriendoPercent ?? 7)
+                    : (data.arriendoProyectado || "")
+                }
+                onChange={(e) => {
+                  if (arriendoType === "percent") {
+                    const raw = e.target.value === "" ? 7 : Number(e.target.value);
+                    const ap = clampArriendoPercent(raw);
+                    onChange({
+                      ...data,
+                      arriendoPercent: ap,
+                      arriendoProyectado: monthlyRentFromAnnualPercent(data.precioCompra, ap),
+                    });
+                  } else {
+                    const val = e.target.value === "" ? 0 : Number(e.target.value);
+                    if (!isNaN(val)) onChange({ ...data, arriendoProyectado: val });
+                  }
+                }}
+                className={arriendoInputClass}
+                placeholder={arriendoType === "percent" ? "7 a 10" : "Ej: 2500000"}
+              />
+              <select
+                value={arriendoType}
+                onChange={(e) => {
+                  const newType = e.target.value as "percent" | "fixed";
+                  if (newType === "percent") {
+                    const ap = clampArriendoPercent(data.arriendoPercent ?? 7);
+                    onChange({
+                      ...data,
+                      arriendoType: newType,
+                      arriendoPercent: ap,
+                      arriendoProyectado: monthlyRentFromAnnualPercent(data.precioCompra, ap),
+                    });
+                  } else {
+                    onChange({ ...data, arriendoType: newType });
+                  }
+                }}
+                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="percent">%</option>
+                <option value="fixed">$ (COP)</option>
+              </select>
+            </div>
+            {arriendoType === "percent" && (
+              <p className="text-xs text-muted">
+                Por defecto 7% anual del precio de compra (rango 7%–10%). El canon mensual es ese porcentaje
+                dividido en 12.
+              </p>
+            )}
+            {arriendoType === "percent" && data.precioCompra > 0 && data.arriendoProyectado > 0 && (
+              <p className="text-xs font-medium text-foreground">
+                Canon mensual calculado: {formatCOP(data.arriendoProyectado)}
+              </p>
+            )}
+            {arriendoType === "fixed" && (
+              <p className="text-xs text-muted">Ingresa el canon mensual estimado en pesos.</p>
+            )}
+          </div>
         </div>
       </Card>
 

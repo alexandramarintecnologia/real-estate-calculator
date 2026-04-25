@@ -70,6 +70,16 @@ export class PropertyDataDto {
   @Min(0)
   arriendoProyectado!: number;
 
+  @IsOptional()
+  @IsEnum(['percent', 'fixed'])
+  arriendoType?: 'percent' | 'fixed';
+
+  @IsOptional()
+  @IsNumber()
+  @Min(7)
+  @Max(10)
+  arriendoPercent?: number;
+
   @IsNumber()
   @Min(0)
   precioVentaProyectado!: number;

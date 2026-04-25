@@ -33,6 +33,9 @@ export interface PropertyData {
   gastosPosesionMensual: number;
   precioCompra: number;
   arriendoProyectado: number;
+  arriendoType?: "percent" | "fixed";
+  /** Entre 7 y 10 cuando arriendoType es percent: % anual del precio de compra para estimar el canon mensual. */
+  arriendoPercent?: number;
   precioVentaProyectado: number;
   precioVentaType?: 'percent' | 'fixed';
   precioVentaPercent?: number;

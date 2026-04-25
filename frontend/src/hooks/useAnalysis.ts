@@ -21,6 +21,8 @@ const defaultProperty: PropertyData = {
   gastosPosesionMensual: 0,
   precioCompra: 0,
   arriendoProyectado: 0,
+  arriendoType: "percent",
+  arriendoPercent: 7,
   precioVentaProyectado: 0,
   precioVentaType: "percent",
   precioVentaPercent: 30,
