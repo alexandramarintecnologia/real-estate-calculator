@@ -11,6 +11,7 @@ import { FilterQuery, Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument, UserRole } from './schemas/user.schema.js';
 import type { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
+import type { BulkCreateUsersDto } from './dto/bulk-create-users.dto.js';
 import {
   FindUsersQueryDto,
   UserStatusFilter,
@@ -23,6 +24,18 @@ export interface PaginatedResult<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface BulkCreateResult {
+  created: number;
+  skippedExisting: number;
+  skippedDuplicate: number;
+  invalid: number;
+  expiresAt: Date | null;
+  createdUsers: Array<{ email: string; fullName: string }>;
+  skippedExistingEmails: string[];
+}
+
+const DEFAULT_EXPIRES_IN_MONTHS = 3;
 
 export interface UsersStats {
   total: number;
@@ -90,6 +103,110 @@ export class UsersService implements OnModuleInit {
       mustSetPassword: !hasPassword,
       expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
     });
+  }
+
+  /**
+   * Crea usuarios en masa a partir de una lista (ej. importada de un CSV).
+   * - Ignora los emails que ya existen en la base de datos (no los actualiza).
+   * - Ignora duplicados dentro de la misma lista (deja la primera aparición).
+   * - Todos los creados quedan con `mustSetPassword: true`, así crean su
+   *   contraseña en el primer inicio de sesión, igual que en el alta individual.
+   */
+  async bulkCreate(dto: BulkCreateUsersDto): Promise<BulkCreateResult> {
+    const months = dto.expiresInMonths ?? DEFAULT_EXPIRES_IN_MONTHS;
+    const expiresAt = this.computeExpiresAt(months);
+    const role = dto.role ?? UserRole.STUDENT;
+
+    // 1) Normalizamos y deduplicamos dentro de la propia lista.
+    const seen = new Set<string>();
+    let skippedDuplicate = 0;
+    const candidates = dto.users
+      .map((u) => ({
+        email: u.email.trim().toLowerCase(),
+        fullName: u.fullName.trim(),
+        phone: u.phone?.trim() ?? '',
+      }))
+      .filter((u) => {
+        if (seen.has(u.email)) {
+          skippedDuplicate += 1;
+          return false;
+        }
+        seen.add(u.email);
+        return true;
+      });
+
+    // 2) Una sola consulta para saber qué emails ya existen en la DB.
+    const emails = candidates.map((u) => u.email);
+    const existing = await this.userModel
+      .find({ email: { $in: emails } }, { email: 1 })
+      .lean()
+      .exec();
+    const existingEmails = new Set(existing.map((e) => e.email));
+
+    const toCreate = candidates.filter((u) => !existingEmails.has(u.email));
+
+    // 3) Insertamos solo los nuevos.
+    if (toCreate.length > 0) {
+      await this.userModel.insertMany(
+        toCreate.map((u) => ({
+          email: u.email,
+          password: '',
+          mustSetPassword: true,
+          fullName: u.fullName,
+          phone: u.phone,
+          role,
+          isActive: true,
+          expiresAt,
+        })),
+        { ordered: false },
+      );
+    }
+
+    return {
+      created: toCreate.length,
+      skippedExisting: existingEmails.size,
+      skippedDuplicate,
+      invalid: 0,
+      expiresAt,
+      createdUsers: toCreate.map((u) => ({
+        email: u.email,
+        fullName: u.fullName,
+      })),
+      skippedExistingEmails: [...existingEmails],
+    };
+  }
+
+  /**
+   * Devuelve la fecha de expiración a `months` meses, al final del día en hora
+   * de Colombia (UTC-5), o null si months es 0. Coincide con el alta individual,
+   * que guarda `...T23:59:59.999-05:00`, sin depender de la zona del servidor.
+   */
+  private computeExpiresAt(months: number): Date | null {
+    if (!months || months <= 0) return null;
+
+    // Fecha actual en hora de Colombia (no usa horario de verano: siempre UTC-5).
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const year = Number(parts.find((p) => p.type === 'year')?.value);
+    const month = Number(parts.find((p) => p.type === 'month')?.value); // 1-12
+    const day = Number(parts.find((p) => p.type === 'day')?.value);
+
+    // Sumamos meses de calendario, ajustando el desbordamiento de año.
+    const zeroBased = month - 1 + months;
+    const targetYear = year + Math.floor(zeroBased / 12);
+    const targetMonth = (zeroBased % 12) + 1; // 1-12
+
+    // Limitamos al último día del mes destino (ej. 31 ene + 1 mes → 28/29 feb).
+    const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+    const targetDay = Math.min(day, lastDay);
+
+    const mm = String(targetMonth).padStart(2, '0');
+    const dd = String(targetDay).padStart(2, '0');
+    return new Date(`${targetYear}-${mm}-${dd}T23:59:59.999-05:00`);
   }
 
   async findAll(

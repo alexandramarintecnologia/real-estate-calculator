@@ -6,10 +6,12 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import BulkImportModal from "@/components/admin/BulkImportModal";
 import { apiClient } from "@/lib/api-client";
 import { useDebounce } from "@/hooks/useDebounce";
 import type {
   AuthUser,
+  BulkImportResult,
   CreateUserPayload,
   PaginatedUsers,
   UpdateUserPayload,
@@ -112,6 +114,7 @@ function AdminContent() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -201,6 +204,22 @@ function AdminContent() {
     await refreshAll();
   }, [notify, refreshAll]);
 
+  const handleImported = useCallback(
+    async (result: BulkImportResult) => {
+      setShowImport(false);
+      const parts = [`${result.created} usuario(s) creado(s)`];
+      if (result.skippedExisting > 0) {
+        parts.push(`${result.skippedExisting} omitido(s) por ya existir`);
+      }
+      if (result.skippedDuplicate > 0) {
+        parts.push(`${result.skippedDuplicate} duplicado(s) en el archivo`);
+      }
+      notify(`Importación completada: ${parts.join(", ")}.`);
+      await refreshAll();
+    },
+    [notify, refreshAll],
+  );
+
   const handleDelete = useCallback(
     async (user: AuthUser) => {
       if (!confirm(`¿Eliminar al usuario ${user.email}?`)) return;
@@ -256,7 +275,12 @@ function AdminContent() {
               Gestiona los usuarios que tienen acceso a la calculadora y sus tiempos de vigencia.
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)}>+ Nuevo usuario</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setShowImport(true)}>
+              Importar CSV
+            </Button>
+            <Button onClick={() => setShowCreate(true)}>+ Nuevo usuario</Button>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -507,6 +531,13 @@ function AdminContent() {
           )}
         </Card>
       </main>
+
+      {showImport && (
+        <BulkImportModal
+          onClose={() => setShowImport(false)}
+          onComplete={handleImported}
+        />
+      )}
 
       {showCreate && (
         <UserFormModal

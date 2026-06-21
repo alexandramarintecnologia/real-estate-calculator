@@ -36,6 +36,28 @@ export interface UpdateUserPayload {
   expiresAt?: string | null;
 }
 
+export interface BulkUserItem {
+  email: string;
+  fullName: string;
+  phone?: string;
+}
+
+export interface BulkImportPayload {
+  users: BulkUserItem[];
+  expiresInMonths?: number;
+  role?: UserRole;
+}
+
+export interface BulkImportResult {
+  created: number;
+  skippedExisting: number;
+  skippedDuplicate: number;
+  invalid: number;
+  expiresAt: string | null;
+  createdUsers: Array<{ email: string; fullName: string }>;
+  skippedExistingEmails: string[];
+}
+
 export type UserStatusFilter = "all" | "active" | "expired" | "disabled" | "expiring_soon";
 
 export interface PaginatedUsers {

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
+import { BulkCreateUsersDto } from './dto/bulk-create-users.dto.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -27,6 +28,11 @@ export class UsersController {
   async create(@Body() dto: CreateUserDto) {
     const user = await this.usersService.create(dto);
     return this.usersService.sanitize(user);
+  }
+
+  @Post('bulk')
+  async bulkCreate(@Body() dto: BulkCreateUsersDto) {
+    return this.usersService.bulkCreate(dto);
   }
 
   @Get()
