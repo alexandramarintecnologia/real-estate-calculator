@@ -22,7 +22,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const HEADER_ALIASES: Record<keyof BulkUserItem, string[]> = {
   email: ["email", "correo", "correo electronico", "e-mail", "mail"],
-  fullName: ["nombre", "name", "fullname", "full name", "nombre completo"],
+  fullName: ["nombre", "name", "fullname", "full name", "nombre completo", "cliente"],
   phone: ["telefono", "teléfono", "phone", "celular", "movil", "móvil", "cel"],
 };
 
@@ -103,8 +103,15 @@ function detectHeaderMap(
 }
 
 /**
+ * Busca el encabezado en las primeras MAX_HEADER_SCAN líneas del archivo.
+ * Google Sheets suele colocar una fila de título antes de los encabezados reales.
+ */
+const MAX_HEADER_SCAN = 10;
+
+/**
  * Parsea el contenido de un CSV a usuarios.
- * - Detecta delimitador (`,`, `;`, tab) y encabezados por nombre.
+ * - Detecta delimitador (`,`, `;`, tab).
+ * - Busca los encabezados por nombre en las primeras filas (no solo la primera).
  * - Si no hay encabezado reconocible, asume el orden: email, nombre, teléfono.
  * - Valida formato de email y presencia del nombre.
  */
@@ -125,16 +132,30 @@ export function parseUsersCsv(content: string): CsvParseResult {
   }
 
   const delimiter = detectDelimiter(lines[0].text);
-  const headerCells = parseLine(lines[0].text, delimiter);
-  const headerMap = detectHeaderMap(headerCells);
 
-  // Si hay encabezado, los datos empiezan en la segunda fila; si no, en la primera.
-  const dataLines = headerMap ? lines.slice(1) : lines;
+  // Buscar la fila de encabezado en las primeras N líneas
+  let headerMap: Record<keyof BulkUserItem, number> | null = null;
+  let headerLineIdx = -1;
+
+  const scanLimit = Math.min(MAX_HEADER_SCAN, lines.length);
+  for (let i = 0; i < scanLimit; i++) {
+    const cells = parseLine(lines[i].text, delimiter);
+    const detected = detectHeaderMap(cells);
+    if (detected) {
+      headerMap = detected;
+      headerLineIdx = i;
+      break;
+    }
+  }
+
+  // Los datos empiezan justo después de la fila de encabezado.
+  // Si no se encontró, se asume que todo es data con orden: email, nombre, teléfono.
+  const dataLines = headerMap ? lines.slice(headerLineIdx + 1) : lines;
   const cols = headerMap ?? { email: 0, fullName: 1, phone: 2 };
 
   for (const { line, text } of dataLines) {
     const cells = parseLine(text, delimiter);
-    const email = (cells[cols.email] ?? "").toLowerCase();
+    const email = (cells[cols.email] ?? "").trim().toLowerCase();
     const fullName = cols.fullName >= 0 ? (cells[cols.fullName] ?? "") : "";
     const phone = cols.phone >= 0 ? (cells[cols.phone] ?? "") : "";
 

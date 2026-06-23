@@ -104,10 +104,11 @@ export default function BulkImportModal({ onClose, onComplete }: BulkImportModal
           <div className="rounded-lg border border-primary/20 bg-primary-softer p-3 text-xs text-primary">
             <p className="font-semibold">Formato esperado</p>
             <p className="mt-1 leading-relaxed">
-              Columnas: <strong>email</strong>, <strong>nombre</strong> y{" "}
-              <strong>teléfono</strong> (opcional). Detectamos los encabezados por nombre; si no
-              hay encabezados, se asume ese orden. Los usuarios que ya existan en la base de datos
-              se omiten automáticamente.
+              El archivo debe tener columnas con encabezados como{" "}
+              <strong>CORREO</strong> (o email), <strong>CLIENTE</strong> (o nombre) y{" "}
+              <strong>TELÉFONO</strong> (opcional). Funciona directamente con la exportación
+              de Google Sheets del listado de infoproductos. Las filas de título
+              antes del encabezado se ignoran automáticamente.
             </p>
           </div>
 
