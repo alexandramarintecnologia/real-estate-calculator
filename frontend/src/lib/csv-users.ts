@@ -20,6 +20,15 @@ export interface CsvParseResult {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Limpia prefijos comunes que Google Sheets puede insertar en links de email. */
+function cleanEmail(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/^mailto:/i, "")
+    .trim();
+}
+
 const HEADER_ALIASES: Record<keyof BulkUserItem, string[]> = {
   email: ["email", "correo", "correo electronico", "e-mail", "mail"],
   fullName: ["nombre", "name", "fullname", "full name", "nombre completo", "cliente"],
@@ -155,7 +164,7 @@ export function parseUsersCsv(content: string): CsvParseResult {
 
   for (const { line, text } of dataLines) {
     const cells = parseLine(text, delimiter);
-    const email = (cells[cols.email] ?? "").trim().toLowerCase();
+    const email = cleanEmail(cells[cols.email] ?? "");
     const fullName = cols.fullName >= 0 ? (cells[cols.fullName] ?? "") : "";
     const phone = cols.phone >= 0 ? (cells[cols.phone] ?? "") : "";
 
