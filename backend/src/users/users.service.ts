@@ -33,6 +33,7 @@ export interface BulkCreateResult {
   expiresAt: Date | null;
   createdUsers: Array<{ email: string; fullName: string }>;
   skippedExistingEmails: string[];
+  invalidEmails: string[];
 }
 
 const DEFAULT_EXPIRES_IN_MONTHS = 3;
@@ -112,21 +113,29 @@ export class UsersService implements OnModuleInit {
    * - Todos los creados quedan con `mustSetPassword: true`, así crean su
    *   contraseña en el primer inicio de sesión, igual que en el alta individual.
    */
+  private static readonly BULK_EMAIL_RE =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+
   async bulkCreate(dto: BulkCreateUsersDto): Promise<BulkCreateResult> {
     const months = dto.expiresInMonths ?? DEFAULT_EXPIRES_IN_MONTHS;
     const expiresAt = this.computeExpiresAt(months);
     const role = dto.role ?? UserRole.STUDENT;
 
-    // 1) Normalizamos y deduplicamos dentro de la propia lista.
+    // 1) Normalizamos, validamos email y deduplicamos dentro de la propia lista.
     const seen = new Set<string>();
     let skippedDuplicate = 0;
+    const invalidEmails: string[] = [];
     const candidates = dto.users
       .map((u) => ({
-        email: u.email.trim().toLowerCase(),
+        email: u.email.trim().toLowerCase().replace(/^mailto:/i, ''),
         fullName: u.fullName.trim(),
         phone: u.phone?.trim() ?? '',
       }))
       .filter((u) => {
+        if (!UsersService.BULK_EMAIL_RE.test(u.email)) {
+          invalidEmails.push(u.email || '(vacío)');
+          return false;
+        }
         if (seen.has(u.email)) {
           skippedDuplicate += 1;
           return false;
@@ -166,13 +175,14 @@ export class UsersService implements OnModuleInit {
       created: toCreate.length,
       skippedExisting: existingEmails.size,
       skippedDuplicate,
-      invalid: 0,
+      invalid: invalidEmails.length,
       expiresAt,
       createdUsers: toCreate.map((u) => ({
         email: u.email,
         fullName: u.fullName,
       })),
       skippedExistingEmails: [...existingEmails],
+      invalidEmails,
     };
   }
 

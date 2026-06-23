@@ -2,7 +2,6 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
-  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
@@ -16,7 +15,7 @@ import { Type } from 'class-transformer';
 import { UserRole } from '../schemas/user.schema.js';
 
 export class BulkUserItemDto {
-  @IsEmail()
+  @IsString()
   email!: string;
 
   @IsString()

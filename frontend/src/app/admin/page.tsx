@@ -214,7 +214,15 @@ function AdminContent() {
       if (result.skippedDuplicate > 0) {
         parts.push(`${result.skippedDuplicate} duplicado(s) en el archivo`);
       }
+      if (result.invalid > 0) {
+        parts.push(`${result.invalid} email(s) inválido(s)`);
+      }
       notify(`Importación completada: ${parts.join(", ")}.`);
+      if (result.invalidEmails && result.invalidEmails.length > 0) {
+        alert(
+          `Los siguientes emails fueron descartados por ser inválidos:\n\n${result.invalidEmails.join("\n")}\n\nPuedes agregarlos manualmente corrigiendo el formato.`
+        );
+      }
       await refreshAll();
     },
     [notify, refreshAll],

@@ -56,6 +56,7 @@ export interface BulkImportResult {
   expiresAt: string | null;
   createdUsers: Array<{ email: string; fullName: string }>;
   skippedExistingEmails: string[];
+  invalidEmails: string[];
 }
 
 export type UserStatusFilter = "all" | "active" | "expired" | "disabled" | "expiring_soon";
