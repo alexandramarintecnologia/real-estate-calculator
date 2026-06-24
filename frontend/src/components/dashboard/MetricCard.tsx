@@ -16,11 +16,12 @@ interface MetricCardProps {
   title: string;
   value: string;
   subtitle?: string;
+  description?: string;
   rating?: Rating;
   icon?: React.ReactNode;
 }
 
-export default function MetricCard({ title, value, subtitle, rating, icon }: MetricCardProps) {
+export default function MetricCard({ title, value, subtitle, description, rating, icon }: MetricCardProps) {
   return (
     <div
       className={`rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md ${
@@ -33,7 +34,8 @@ export default function MetricCard({ title, value, subtitle, rating, icon }: Met
           <p className={`text-2xl font-bold ${rating ? ratingColors[rating].split(" ")[1] : "text-foreground"}`}>
             {value}
           </p>
-          {subtitle && <p className="text-xs text-muted">{subtitle}</p>}
+          {subtitle && <p className="text-xs font-medium text-foreground/80">{subtitle}</p>}
+          {description && <p className="text-xs leading-relaxed text-muted">{description}</p>}
         </div>
         {icon && <div className="text-muted/40">{icon}</div>}
       </div>

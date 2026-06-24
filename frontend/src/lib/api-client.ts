@@ -83,3 +83,28 @@ export const apiClient = {
 export async function calculateAnalysis(data: AnalysisRequest): Promise<AnalysisResult> {
   return apiClient.post<AnalysisResult>("/analysis/calculate", data);
 }
+
+export const historyApi = {
+  list: (page = 1, limit = 20, search?: string) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.set("search", search);
+    return apiClient.get<import("@/types/history.types").PaginatedHistory>(
+      `/analysis-history?${params}`,
+    );
+  },
+  getById: (id: string) =>
+    apiClient.get<import("@/types/history.types").AnalysisHistoryDetail>(
+      `/analysis-history/${id}`,
+    ),
+  compare: (ids: string[]) =>
+    apiClient.post<import("@/types/history.types").AnalysisHistoryDetail[]>(
+      `/analysis-history/compare`,
+      { ids },
+    ),
+  updateLabel: (id: string, label: string) =>
+    apiClient.patch<import("@/types/history.types").AnalysisHistoryItem>(
+      `/analysis-history/${id}/label`,
+      { label },
+    ),
+  remove: (id: string) => apiClient.delete<void>(`/analysis-history/${id}`),
+};

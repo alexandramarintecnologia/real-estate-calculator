@@ -3,6 +3,7 @@
 import { type ButtonHTMLAttributes } from "react";
 
 type Variant = "primary" | "secondary" | "outline" | "danger";
+type Size = "sm" | "md" | "lg";
 
 const variantStyles: Record<Variant, string> = {
   primary:
@@ -15,13 +16,21 @@ const variantStyles: Record<Variant, string> = {
     "bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger",
 };
 
+const sizeStyles: Record<Size, string> = {
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-5 py-2.5 text-sm",
+  lg: "px-6 py-3 text-base",
+};
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
+  size?: Size;
   isLoading?: boolean;
 }
 
 export default function Button({
   variant = "primary",
+  size = "md",
   isLoading,
   children,
   className = "",
@@ -30,7 +39,7 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

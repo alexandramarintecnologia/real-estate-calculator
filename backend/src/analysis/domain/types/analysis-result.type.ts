@@ -22,6 +22,8 @@ export interface RemodelingCost {
   costPerM2: number;
   totalCost: number;
   adminPercentage?: number;
+  remodelingPercent?: number;
+  baseCost?: number;
 }
 
 export interface ProjectCosts {

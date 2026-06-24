@@ -114,14 +114,20 @@ export class RemodelingScenarioDto {
 
   @IsOptional()
   @IsNumber()
+  @Min(15)
+  @Max(35)
+  remodelingPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
   @Min(10)
-  @Max(25)
+  @Max(30)
   adminPercentage?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
-  customCostPerM2?: number;
+  customCost?: number;
 }
 
 export class ProjectExpensesDto {

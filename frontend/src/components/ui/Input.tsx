@@ -8,16 +8,42 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
   prefix?: string;
   suffix?: string;
+  showRequiredIndicator?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, prefix, suffix, id, className = "", ...props }, ref) => {
+  (
+    {
+      label,
+      error,
+      hint,
+      prefix,
+      suffix,
+      id,
+      className = "",
+      required,
+      showRequiredIndicator = true,
+      onBlur,
+      ...props
+    },
+    ref,
+  ) => {
     const inputId = id ?? label.toLowerCase().replace(/\s+/g, "-");
+    const showRequired = required && showRequiredIndicator;
 
     return (
       <div className="space-y-1.5">
         <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
           {label}
+          {showRequired && (
+            <>
+              <span className="text-danger" aria-hidden="true">
+                {" "}
+                *
+              </span>
+              <span className="sr-only"> (obligatorio)</span>
+            </>
+          )}
         </label>
         <div className="relative flex items-stretch">
           {prefix && (
@@ -28,10 +54,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`block w-full rounded-lg border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted/60 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+            required={required}
+            onBlur={onBlur}
+            className={`block w-full rounded-lg border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted/60 transition-colors focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 ${
               prefix ? "rounded-l-none" : ""
             } ${suffix ? "rounded-r-none" : ""} ${
-              error ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border"
+              error ? "border-danger focus:border-danger focus:ring-danger/20" : "border-border focus:border-primary focus:ring-primary/20"
             } ${className}`}
             aria-invalid={!!error}
             aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}

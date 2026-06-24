@@ -30,9 +30,9 @@ export default function ResultsDashboard({ result, property, onReset }: ResultsD
           <DecisionBadge decision={evaluation.decision} />
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-xs text-muted">ROI:</span>
+          <span className="text-xs text-muted">Ganancia al vender (ROI):</span>
           <RatingBadge rating={evaluation.roiRating} />
-          <span className="text-xs text-muted">Cap Rate:</span>
+          <span className="text-xs text-muted">Plan B — arriendo:</span>
           <RatingBadge rating={evaluation.capRateRating} />
           <span className="text-xs text-muted">Zona:</span>
           <RatingBadge rating={evaluation.zoneRating} />
@@ -44,24 +44,27 @@ export default function ResultsDashboard({ result, property, onReset }: ResultsD
         <MetricCard
           title="Ganancia Bruta"
           value={formatCOP(profitability.grossProfit)}
-          subtitle="Precio venta - Costo total"
+          subtitle="Precio de venta menos costo total"
+          description="Diferencia en pesos entre lo que esperas vender y lo que invertiste en el proyecto."
           rating={evaluation.roiRating}
         />
         <MetricCard
           title="ROI"
           value={formatPercent(profitability.roi)}
-          subtitle="Retorno sobre inversión"
+          subtitle="Ganancia al vender el inmueble"
+          description="Porcentaje que ganas (o pierdes) sobre todo lo invertido si lo vendes al precio proyectado."
           rating={evaluation.roiRating}
         />
         <MetricCard
           title="Arriendo Anual"
           value={formatCOP(profitability.annualRentalIncome)}
-          subtitle="Ingreso anual por arriendo"
+          subtitle="Ingreso estimado por 12 meses de arriendo"
         />
         <MetricCard
-          title="Cap Rate"
+          title="Rentabilidad por arriendo"
           value={formatPercent(profitability.capRate)}
-          subtitle="Tasa de capitalización"
+          subtitle="Cap Rate — tu plan B si no vendes"
+          description="Indica cuánto del dinero invertido recuperarías al año solo con el arriendo. Entre 5% y 8% es aceptable; arriba de 8% es excelente."
           rating={evaluation.capRateRating}
         />
       </div>

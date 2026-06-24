@@ -35,9 +35,19 @@ export default function ScenarioComparison({
             <p className="mt-1 text-sm font-semibold text-foreground">
               {scenarioLabels[s.scenario]}
             </p>
-            <p className="mt-2 text-xs text-muted">Costo/m²</p>
-            <p className="text-sm font-medium">{formatCOP(s.costPerM2)}</p>
-            <p className="mt-2 text-xs text-muted">Total</p>
+            {s.remodelingPercent && (
+              <>
+                <p className="mt-2 text-xs text-muted">% sobre precio de compra</p>
+                <p className="text-sm font-medium">{s.remodelingPercent}%</p>
+              </>
+            )}
+            {s.baseCost != null && s.baseCost > 0 && (
+              <>
+                <p className="mt-2 text-xs text-muted">Costo base remodelación</p>
+                <p className="text-sm font-medium">{formatCOP(s.baseCost)}</p>
+              </>
+            )}
+            <p className="mt-2 text-xs text-muted">Costo total</p>
             <p className="text-lg font-bold text-foreground">{formatCOP(s.totalCost)}</p>
             {s.adminPercentage && (
               <p className="mt-1 text-xs text-muted">Admin: {s.adminPercentage}%</p>

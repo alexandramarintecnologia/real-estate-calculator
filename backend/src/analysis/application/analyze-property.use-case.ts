@@ -22,15 +22,17 @@ export class AnalyzePropertyUseCase {
     const { property, remodeling, expenses, qualitative } = dto;
 
     const remodelingCosts = this.remodelingCalc.calculateAllScenarios(
-      property.m2Remodelacion,
+      property.precioCompra,
+      remodeling.remodelingPercent,
       remodeling.adminPercentage,
     );
 
     const selectedRemodelingCost = this.remodelingCalc.calculate({
-      m2ToRemodel: property.m2Remodelacion,
+      purchasePrice: property.precioCompra,
       scenario: remodeling.selectedScenario,
+      remodelingPercent: remodeling.remodelingPercent,
       adminPercentage: remodeling.adminPercentage,
-      customCostPerM2: remodeling.customCostPerM2,
+      customCost: remodeling.customCost,
     });
 
     const projectCosts = this.projectCostCalc.calculate({

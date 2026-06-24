@@ -13,8 +13,6 @@ import type {
 } from "@/types/analysis.types";
 
 const defaultProperty: PropertyData = {
-  alcobas: 0,
-  banos: 0,
   metrosCuadrados: 0,
   m2Remodelacion: 0,
   parqueadero: false,
@@ -31,6 +29,7 @@ const defaultProperty: PropertyData = {
 
 const defaultRemodeling: RemodelingScenario = {
   selectedScenario: 1,
+  remodelingPercent: 32,
 };
 
 const defaultExpenses: ProjectExpenses = {

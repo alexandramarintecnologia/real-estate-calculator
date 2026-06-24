@@ -7,57 +7,123 @@ describe('RemodelingCalculator', () => {
     calculator = new RemodelingCalculator();
   });
 
-  it('should calculate scenario 1 (empresa todo costo)', () => {
-    const result = calculator.calculate({ m2ToRemodel: 50, scenario: 1 });
-    expect(result.scenario).toBe(1);
-    expect(result.costPerM2).toBe(1_150_000);
-    expect(result.totalCost).toBe(50 * 1_150_000);
-    expect(result.adminPercentage).toBeUndefined();
-  });
-
-  it('should calculate scenario 2 (solo mano de obra)', () => {
-    const result = calculator.calculate({ m2ToRemodel: 30, scenario: 2 });
-    expect(result.costPerM2).toBe(500_000);
-    expect(result.totalCost).toBe(30 * 500_000);
-  });
-
-  it('should calculate scenario 3 with default admin percentage', () => {
-    const result = calculator.calculate({ m2ToRemodel: 40, scenario: 3 });
-    expect(result.adminPercentage).toBe(15);
-    expect(result.costPerM2).toBe(500_000 * 1.15);
-    expect(result.totalCost).toBe(40 * 500_000 * 1.15);
-  });
-
-  it('should calculate scenario 3 with custom admin percentage', () => {
-    const result = calculator.calculate({
-      m2ToRemodel: 40,
-      scenario: 3,
-      adminPercentage: 20,
+  describe('Scenario 1 - Empresa todo costo (25-35%)', () => {
+    it('should calculate at default 32%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 1,
+      });
+      expect(result.scenario).toBe(1);
+      expect(result.remodelingPercent).toBe(32);
+      expect(result.totalCost).toBe(32_000_000);
+      expect(result.baseCost).toBe(32_000_000);
+      expect(result.adminPercentage).toBeUndefined();
     });
-    expect(result.adminPercentage).toBe(20);
-    expect(result.costPerM2).toBe(500_000 * 1.2);
-  });
 
-  it('should allow custom cost per m2', () => {
-    const result = calculator.calculate({
-      m2ToRemodel: 20,
-      scenario: 1,
-      customCostPerM2: 1_000_000,
+    it('should clamp to min 25%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 1,
+        remodelingPercent: 10,
+      });
+      expect(result.remodelingPercent).toBe(25);
+      expect(result.totalCost).toBe(25_000_000);
     });
-    expect(result.costPerM2).toBe(1_000_000);
-    expect(result.totalCost).toBe(20_000_000);
+
+    it('should clamp to max 35%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 1,
+        remodelingPercent: 50,
+      });
+      expect(result.remodelingPercent).toBe(35);
+      expect(result.totalCost).toBe(35_000_000);
+    });
+
+    it('should allow custom cost', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 1,
+        customCost: 40_000_000,
+      });
+      expect(result.totalCost).toBe(40_000_000);
+    });
   });
 
-  it('should calculate all 3 scenarios at once', () => {
-    const results = calculator.calculateAllScenarios(50);
-    expect(results).toHaveLength(3);
-    expect(results[0].scenario).toBe(1);
-    expect(results[1].scenario).toBe(2);
-    expect(results[2].scenario).toBe(3);
+  describe('Scenario 2 - Solo mano de obra (15-20%)', () => {
+    it('should calculate at default 15%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 2,
+      });
+      expect(result.totalCost).toBe(15_000_000);
+      expect(result.remodelingPercent).toBe(15);
+    });
+
+    it('should calculate at 20%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 200_000_000,
+        scenario: 2,
+        remodelingPercent: 20,
+      });
+      expect(result.totalCost).toBe(40_000_000);
+    });
+
+    it('should clamp to min 15%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 2,
+        remodelingPercent: 5,
+      });
+      expect(result.remodelingPercent).toBe(15);
+    });
+
+    it('should clamp to max 20%', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 2,
+        remodelingPercent: 30,
+      });
+      expect(result.remodelingPercent).toBe(20);
+    });
   });
 
-  it('should return 0 total cost when 0 m2 to remodel', () => {
-    const result = calculator.calculate({ m2ToRemodel: 0, scenario: 1 });
-    expect(result.totalCost).toBe(0);
+  describe('Scenario 3 - Administrador de obra (15-20% + admin)', () => {
+    it('should calculate at 15% + 18% admin', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 3,
+      });
+      expect(result.baseCost).toBe(15_000_000);
+      expect(result.adminPercentage).toBe(18);
+      expect(result.totalCost).toBe(Math.round(15_000_000 * 1.18));
+    });
+
+    it('should use custom admin percentage', () => {
+      const result = calculator.calculate({
+        purchasePrice: 100_000_000,
+        scenario: 3,
+        remodelingPercent: 20,
+        adminPercentage: 25,
+      });
+      const baseCost = 20_000_000;
+      expect(result.baseCost).toBe(baseCost);
+      expect(result.adminPercentage).toBe(25);
+      expect(result.totalCost).toBe(Math.round(baseCost * 1.25));
+    });
+  });
+
+  describe('calculateAllScenarios', () => {
+    it('should return all 3 scenarios with correct defaults', () => {
+      const results = calculator.calculateAllScenarios(100_000_000);
+      expect(results).toHaveLength(3);
+      expect(results[0].remodelingPercent).toBe(32);
+      expect(results[0].totalCost).toBe(32_000_000);
+      expect(results[1].remodelingPercent).toBe(15);
+      expect(results[1].totalCost).toBe(15_000_000);
+      expect(results[2].remodelingPercent).toBe(15);
+      expect(results[2].adminPercentage).toBe(18);
+      expect(results[2].totalCost).toBe(Math.round(15_000_000 * 1.18));
+    });
   });
 });

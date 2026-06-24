@@ -168,6 +168,12 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     marginTop: 2,
   },
+  metricHint: {
+    fontSize: 6,
+    color: COLORS.muted,
+    marginTop: 3,
+    lineHeight: 1.3,
+  },
   card: {
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -463,11 +469,11 @@ export default function AnalysisReportPDF({
               )}
               <View style={styles.propertyItem}>
                 <Text style={styles.propertyLabel}>Alcobas</Text>
-                <Text style={styles.propertyValue}>{property.alcobas}</Text>
+                <Text style={styles.propertyValue}>{property.alcobas ?? "—"}</Text>
               </View>
               <View style={styles.propertyItem}>
                 <Text style={styles.propertyLabel}>Baños</Text>
-                <Text style={styles.propertyValue}>{property.banos}</Text>
+                <Text style={styles.propertyValue}>{property.banos ?? "—"}</Text>
               </View>
               <View style={styles.propertyItem}>
                 <Text style={styles.propertyLabel}>Área total</Text>
@@ -496,8 +502,8 @@ export default function AnalysisReportPDF({
             {decisionLabels[evaluation.decision]}
           </Text>
           <View style={styles.ratingRow}>
-            <RatingChip label="ROI" rating={evaluation.roiRating} />
-            <RatingChip label="Cap Rate" rating={evaluation.capRateRating} />
+            <RatingChip label="ROI (venta)" rating={evaluation.roiRating} />
+            <RatingChip label="Arriendo (plan B)" rating={evaluation.capRateRating} />
             <RatingChip label="Zona" rating={evaluation.zoneRating} />
           </View>
         </View>
@@ -526,9 +532,12 @@ export default function AnalysisReportPDF({
               <Text style={styles.metricSubtitle}>Ingreso por arriendo</Text>
             </View>
             <View style={styles.metricCard}>
-              <Text style={styles.metricTitle}>Cap Rate</Text>
+              <Text style={styles.metricTitle}>Rentabilidad por arriendo</Text>
               <Text style={styles.metricValue}>{formatPercent(profitability.capRate)}</Text>
-              <Text style={styles.metricSubtitle}>Tasa de capitalización</Text>
+              <Text style={styles.metricSubtitle}>Cap Rate — plan B si no vendes</Text>
+              <Text style={styles.metricHint}>
+                Cuánto recuperarías al año del total invertido solo con el arriendo.
+              </Text>
             </View>
           </View>
         </View>
@@ -614,7 +623,7 @@ export default function AnalysisReportPDF({
           <View style={styles.table}>
             <View style={styles.tableHeader}>
               <Text style={{ ...styles.tableHeaderCell, flex: 1 }}>Escenario</Text>
-              <Text style={{ ...styles.tableHeaderCell, flex: 1.3 }}>Costo por m²</Text>
+              <Text style={{ ...styles.tableHeaderCell, flex: 1.3 }}>% Remodelación</Text>
               <Text style={{ ...styles.tableHeaderCell, flex: 1 }}>% Admin</Text>
               <Text style={{ ...styles.tableHeaderCell, flex: 1.6, textAlign: "right" }}>
                 Costo total
@@ -632,7 +641,7 @@ export default function AnalysisReportPDF({
                     {isSelected ? "  ✓" : ""}
                   </Text>
                   <Text style={{ ...styles.tableCell, flex: 1.3 }}>
-                    {formatCOP(s.costPerM2)}
+                    {s.remodelingPercent ? `${s.remodelingPercent}%` : "—"}
                   </Text>
                   <Text style={{ ...styles.tableCell, flex: 1 }}>
                     {s.adminPercentage ? `${s.adminPercentage}%` : "—"}

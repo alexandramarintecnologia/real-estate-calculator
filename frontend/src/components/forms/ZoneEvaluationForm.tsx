@@ -84,7 +84,14 @@ export default function ZoneEvaluationForm({
           {factors.map((f) => (
             <div key={f.key} className="grid gap-2 sm:grid-cols-[1fr_180px] sm:items-end">
               <div>
-                <p className="text-sm font-medium text-foreground">{f.label}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {f.label}
+                  <span className="text-danger" aria-hidden="true">
+                    {" "}
+                    *
+                  </span>
+                  <span className="sr-only"> (obligatorio)</span>
+                </p>
                 <p className="text-xs text-muted">{f.description}</p>
               </div>
               <Select

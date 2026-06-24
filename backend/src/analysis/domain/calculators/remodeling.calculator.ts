@@ -3,53 +3,57 @@ import { REMODELING_SCENARIOS } from '../../../shared/constants/thresholds.const
 import type { RemodelingCost } from '../types/analysis-result.type.js';
 
 export interface RemodelingInput {
-  m2ToRemodel: number;
+  purchasePrice: number;
   scenario: 1 | 2 | 3;
+  remodelingPercent?: number;
   adminPercentage?: number;
-  customCostPerM2?: number;
+  customCost?: number;
 }
 
 @Injectable()
 export class RemodelingCalculator {
   calculate(input: RemodelingInput): RemodelingCost {
-    const { m2ToRemodel, scenario, adminPercentage } = input;
+    const { purchasePrice, scenario, customCost } = input;
+    const config = REMODELING_SCENARIOS[scenario];
 
-    let costPerM2: number;
+    const remodelingPercent = Math.min(
+      config.maxPercent,
+      Math.max(config.minPercent, input.remodelingPercent ?? config.defaultPercent),
+    );
+
+    const baseCost =
+      customCost ?? Math.round((purchasePrice * remodelingPercent) / 100);
+
+    let totalCost = baseCost;
     let effectiveAdminPercent: number | undefined;
 
-    switch (scenario) {
-      case 1:
-        costPerM2 = input.customCostPerM2 ?? REMODELING_SCENARIOS[1].costPerM2;
-        break;
-      case 2:
-        costPerM2 = input.customCostPerM2 ?? REMODELING_SCENARIOS[2].costPerM2;
-        break;
-      case 3: {
-        const baseCost =
-          input.customCostPerM2 ?? REMODELING_SCENARIOS[3].baseCostPerM2;
-        effectiveAdminPercent =
-          adminPercentage ?? REMODELING_SCENARIOS[3].defaultAdminPercent;
-        costPerM2 = baseCost * (1 + effectiveAdminPercent / 100);
-        break;
-      }
+    if (scenario === 3) {
+      effectiveAdminPercent =
+        input.adminPercentage ??
+        REMODELING_SCENARIOS[3].defaultAdminPercent;
+      totalCost = Math.round(baseCost * (1 + effectiveAdminPercent / 100));
     }
 
     return {
       scenario,
-      costPerM2,
-      totalCost: m2ToRemodel * costPerM2,
+      costPerM2: 0,
+      totalCost,
       adminPercentage: effectiveAdminPercent,
+      remodelingPercent,
+      baseCost,
     };
   }
 
   calculateAllScenarios(
-    m2ToRemodel: number,
+    purchasePrice: number,
+    remodelingPercent?: number,
     adminPercentage?: number,
   ): RemodelingCost[] {
     return [1, 2, 3].map((scenario) =>
       this.calculate({
-        m2ToRemodel,
+        purchasePrice,
         scenario: scenario as 1 | 2 | 3,
+        remodelingPercent,
         adminPercentage,
       }),
     );

@@ -1,9 +1,15 @@
 "use client";
 
+import { useCallback } from "react";
 import Input from "@/components/ui/Input";
+import NumberInput from "@/components/ui/NumberInput";
+import InlineNumberInput from "@/components/ui/InlineNumberInput";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import FormErrorSummary from "@/components/ui/FormErrorSummary";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import { fieldSelectRightClass } from "@/lib/field-classes";
 import { formatCOP } from "@/lib/formatters";
 import type { PropertyData } from "@/types/analysis.types";
 
@@ -13,6 +19,23 @@ interface PropertyFormProps {
   onNext: () => void;
 }
 
+type RequiredField =
+  | "alcobas"
+  | "banos"
+  | "metrosCuadrados"
+  | "precioCompra"
+  | "precioVentaProyectado"
+  | "mesesProyectadosVenta";
+
+const REQUIRED_FIELDS: RequiredField[] = [
+  "alcobas",
+  "banos",
+  "metrosCuadrados",
+  "precioCompra",
+  "precioVentaProyectado",
+  "mesesProyectadosVenta",
+];
+
 const clampArriendoPercent = (p: number) =>
   Math.min(10, Math.max(7, Number.isFinite(p) ? p : 7));
 
@@ -21,49 +44,95 @@ const monthlyRentFromAnnualPercent = (purchase: number, percent: number) =>
     ? Math.round((purchase * clampArriendoPercent(percent)) / 100 / 12)
     : 0;
 
-const arriendoInputClass =
-  "block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
-
 export default function PropertyForm({ data, onChange, onNext }: PropertyFormProps) {
   const update = <K extends keyof PropertyData>(key: K, value: PropertyData[K]) => {
     onChange({ ...data, [key]: value });
   };
 
-  const numField = (key: keyof PropertyData, value: string) => {
-    const n = value === "" ? 0 : Number(value);
-    if (!isNaN(n)) update(key, n as PropertyData[typeof key]);
-  };
-
-  const handlePrecioCompraChange = (val: string) => {
-    const n = val === "" ? 0 : Number(val);
-    if (!isNaN(n)) {
-      const updates: Partial<PropertyData> = { precioCompra: n };
-      const currentVentaType = data.precioVentaType ?? "percent";
-      if (currentVentaType === "percent") {
-        const percent = data.precioVentaPercent ?? 30;
-        updates.precioVentaProyectado = n * (1 + percent / 100);
-      }
-      const currentArriendoType = data.arriendoType ?? "percent";
-      if (currentArriendoType === "percent") {
-        const ap = clampArriendoPercent(data.arriendoPercent ?? 7);
-        updates.arriendoPercent = ap;
-        updates.arriendoProyectado = monthlyRentFromAnnualPercent(n, ap);
-      }
-      onChange({ ...data, ...updates });
+  const handlePrecioCompraChange = (n: number | undefined) => {
+    const precio = n ?? 0;
+    const updates: Partial<PropertyData> = { precioCompra: precio };
+    const currentVentaType = data.precioVentaType ?? "percent";
+    if (currentVentaType === "percent") {
+      const percent = data.precioVentaPercent ?? 30;
+      updates.precioVentaProyectado = precio * (1 + percent / 100);
     }
+    const currentArriendoType = data.arriendoType ?? "percent";
+    if (currentArriendoType === "percent") {
+      const ap = clampArriendoPercent(data.arriendoPercent ?? 7);
+      updates.arriendoPercent = ap;
+      updates.arriendoProyectado = monthlyRentFromAnnualPercent(precio, ap);
+    }
+    onChange({ ...data, ...updates });
   };
 
   const ventaType = data.precioVentaType ?? "percent";
   const arriendoType = data.arriendoType ?? "percent";
 
-  const isValid =
-    data.metrosCuadrados > 0 &&
-    data.precioCompra > 0 &&
-    data.precioVentaProyectado > 0 &&
-    data.mesesProyectadosVenta > 0;
+  const getErrors = useCallback((): Partial<Record<RequiredField, string>> => {
+    const errors: Partial<Record<RequiredField, string>> = {};
+    if (data.alcobas === undefined) {
+      errors.alcobas = "Ingresa el número de alcobas";
+    } else if (data.alcobas < 0) {
+      errors.alcobas = "El número de alcobas no puede ser negativo";
+    }
+    if (data.banos === undefined) {
+      errors.banos = "Ingresa el número de baños";
+    } else if (data.banos < 0) {
+      errors.banos = "El número de baños no puede ser negativo";
+    }
+    if (data.metrosCuadrados <= 0) {
+      errors.metrosCuadrados = "Ingresa el área total del inmueble en m²";
+    }
+    if (data.precioCompra <= 0) {
+      errors.precioCompra = "Ingresa el precio de compra";
+    }
+    if (data.precioVentaProyectado <= 0) {
+      errors.precioVentaProyectado =
+        ventaType === "percent"
+          ? "Define la rentabilidad esperada o el precio de compra"
+          : "Ingresa el precio de venta proyectado";
+    }
+    if (data.mesesProyectadosVenta <= 0) {
+      errors.mesesProyectadosVenta = "Ingresa los meses proyectados para vender";
+    }
+    return errors;
+  }, [
+    data.alcobas,
+    data.banos,
+    data.metrosCuadrados,
+    data.precioCompra,
+    data.precioVentaProyectado,
+    data.mesesProyectadosVenta,
+    ventaType,
+  ]);
+
+  const { getError, touch, validateAll, submitted, hasErrors, firstInvalidField } =
+    useFormValidation<RequiredField>({
+      fields: REQUIRED_FIELDS,
+      getErrors,
+    });
+
+  const handleNext = () => {
+    if (!validateAll()) {
+      if (firstInvalidField) {
+        document
+          .getElementById(`field-${firstInvalidField}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+    onNext();
+  };
+
+  const summaryErrors = submitted && hasErrors
+    ? Array.from(new Set(REQUIRED_FIELDS.map((field) => getErrors()[field]).filter(Boolean) as string[]))
+    : [];
 
   return (
     <div className="space-y-6">
+      {summaryErrors.length > 0 && <FormErrorSummary errors={summaryErrors} />}
+
       <Card title="Información del Inmueble" description="Datos básicos de la propiedad a analizar">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -85,50 +154,64 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             value={data.torre ?? ""}
             onChange={(e) => update("torre", e.target.value)}
           />
-          <Input
+          <NumberInput
             label="Piso (opcional)"
-            type="number"
-            value={data.piso ?? ""}
-            onChange={(e) => numField("piso", e.target.value)}
+            value={data.piso}
+            min={0}
+            allowEmpty
+            onChange={(value) => update("piso", value)}
           />
           <Input
             label="Número de Apto (opcional)"
             value={data.numeroApto ?? ""}
             onChange={(e) => update("numeroApto", e.target.value)}
           />
-          <Input
-            label="Alcobas"
-            type="number"
-            min={0}
-            value={data.alcobas || ""}
-            onChange={(e) => numField("alcobas", e.target.value)}
-          />
-          <Input
-            label="Baños"
-            type="number"
-            min={0}
-            value={data.banos || ""}
-            onChange={(e) => numField("banos", e.target.value)}
-          />
-          <Input
-            label="Área total (m²)"
-            type="number"
-            min={1}
-            value={data.metrosCuadrados || ""}
-            onChange={(e) => numField("metrosCuadrados", e.target.value)}
-            suffix="m²"
-            required
-          />
-          <Input
+          <div id="field-alcobas">
+            <NumberInput
+              label="Alcobas"
+              value={data.alcobas}
+              min={0}
+              allowEmpty
+              onChange={(value) => update("alcobas", value)}
+              onBlur={() => touch("alcobas")}
+              required
+              error={getError("alcobas")}
+            />
+          </div>
+          <div id="field-banos">
+            <NumberInput
+              label="Baños"
+              value={data.banos}
+              min={0}
+              allowEmpty
+              onChange={(value) => update("banos", value)}
+              onBlur={() => touch("banos")}
+              required
+              error={getError("banos")}
+            />
+          </div>
+          <div id="field-metrosCuadrados">
+            <NumberInput
+              label="Área total (m²)"
+              value={data.metrosCuadrados || undefined}
+              min={1}
+              onChange={(value) => update("metrosCuadrados", value ?? 0)}
+              onBlur={() => touch("metrosCuadrados")}
+              suffix="m²"
+              required
+              error={getError("metrosCuadrados")}
+            />
+          </div>
+          <NumberInput
             label="m² que necesitan remodelación (opcional)"
-            type="number"
+            value={data.m2Remodelacion || undefined}
             min={0}
-            value={data.m2Remodelacion || ""}
-            onChange={(e) => numField("m2Remodelacion", e.target.value)}
+            onChange={(value) => update("m2Remodelacion", value ?? 0)}
             suffix="m²"
           />
           <Select
             label="Parqueadero"
+            required
             options={[
               { value: "true", label: "Sí" },
               { value: "false", label: "No" },
@@ -157,42 +240,63 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
 
       <Card title="Proyección Financiera" description="Datos financieros del inmueble">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Precio de compra"
-            type="number"
-            min={0}
-            value={data.precioCompra || ""}
-            onChange={(e) => handlePrecioCompraChange(e.target.value)}
-            prefix="$"
-            hint="Precio del inmueble en COP"
-            required
-          />
-          <div className="space-y-1.5">
+          <div id="field-precioCompra">
+            <NumberInput
+              label="Precio de compra"
+              value={data.precioCompra || undefined}
+              min={0}
+              onChange={handlePrecioCompraChange}
+              onBlur={() => touch("precioCompra")}
+              prefix="$"
+              hint="Precio del inmueble en COP"
+              required
+              error={getError("precioCompra")}
+            />
+          </div>
+          <div id="field-precioVentaProyectado" className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">
-              Precio de venta proyectado {ventaType === "percent" ? "(Rentabilidad %)" : "(Monto en $)"}
+              Precio de venta proyectado{" "}
+              {ventaType === "percent" ? "(Rentabilidad %)" : "(Monto en $)"}
+              <span className="text-danger" aria-hidden="true">
+                {" "}
+                *
+              </span>
+              <span className="sr-only"> (obligatorio)</span>
             </label>
             <div className="flex">
-              <input
-                type="number"
+              <InlineNumberInput
+                value={
+                  ventaType === "percent"
+                    ? data.precioVentaPercent
+                    : data.precioVentaProyectado || undefined
+                }
+                decimals={ventaType === "percent"}
                 min={0}
-                value={ventaType === "percent" ? (data.precioVentaPercent ?? "") : (data.precioVentaProyectado || "")}
-                onChange={(e) => {
-                  const val = e.target.value ? Number(e.target.value) : 0;
+                onChange={(val) => {
+                  const amount = val ?? 0;
                   if (ventaType === "percent") {
-                    const newProyectado = data.precioCompra * (1 + val / 100);
                     onChange({
                       ...data,
-                      precioVentaPercent: val,
-                      precioVentaProyectado: newProyectado
+                      precioVentaPercent: amount,
+                      precioVentaProyectado: data.precioCompra * (1 + amount / 100),
                     });
                   } else {
                     onChange({
                       ...data,
-                      precioVentaProyectado: val
+                      precioVentaProyectado: amount,
                     });
                   }
                 }}
-                className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                onBlur={() => touch("precioVentaProyectado")}
+                hasError={!!getError("precioVentaProyectado")}
+                aria-invalid={!!getError("precioVentaProyectado")}
+                aria-describedby={
+                  getError("precioVentaProyectado")
+                    ? "precio-venta-error"
+                    : ventaType === "percent"
+                      ? "precio-venta-hint"
+                      : undefined
+                }
                 placeholder={ventaType === "percent" ? "Ej: 30" : "Ej: 400000000"}
               />
               <select
@@ -206,47 +310,54 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
                       ...data,
                       precioVentaType: newType,
                       precioVentaPercent: percent,
-                      precioVentaProyectado: newProyectado
+                      precioVentaProyectado: newProyectado,
                     });
                   } else {
                     onChange({
                       ...data,
-                      precioVentaType: newType
+                      precioVentaType: newType,
                     });
                   }
                 }}
-                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className={fieldSelectRightClass(!!getError("precioVentaProyectado"))}
               >
                 <option value="percent">%</option>
                 <option value="fixed">$ (COP)</option>
               </select>
             </div>
-            {ventaType === "percent" && data.precioVentaProyectado > 0 && (
+            {getError("precioVentaProyectado") && (
+              <p id="precio-venta-error" className="text-xs text-danger">
+                {getError("precioVentaProyectado")}
+              </p>
+            )}
+            {!getError("precioVentaProyectado") && ventaType === "percent" && data.precioVentaProyectado > 0 && (
               <p className="text-xs text-muted">
                 Precio calculado: {formatCOP(data.precioVentaProyectado)}
               </p>
             )}
-            {ventaType === "percent" && (
-              <p className="text-xs text-muted">
+            {!getError("precioVentaProyectado") && ventaType === "percent" && (
+              <p id="precio-venta-hint" className="text-xs text-muted">
                 Ingresa el porcentaje de rentabilidad esperada (ej: 20 al 50%) sobre el precio de compra.
               </p>
             )}
           </div>
-          <Input
-            label="Meses proyectados para vender"
-            type="number"
-            min={1}
-            value={data.mesesProyectadosVenta || ""}
-            onChange={(e) => numField("mesesProyectadosVenta", e.target.value)}
-            suffix="meses"
-            required
-          />
-          <Input
+          <div id="field-mesesProyectadosVenta">
+            <NumberInput
+              label="Meses proyectados para vender"
+              value={data.mesesProyectadosVenta || undefined}
+              min={1}
+              onChange={(value) => update("mesesProyectadosVenta", value ?? 0)}
+              onBlur={() => touch("mesesProyectadosVenta")}
+              suffix="meses"
+              required
+              error={getError("mesesProyectadosVenta")}
+            />
+          </div>
+          <NumberInput
             label="Gastos de posesión (mensual) (opcional)"
-            type="number"
+            value={data.gastosPosesionMensual || undefined}
             min={0}
-            value={data.gastosPosesionMensual || ""}
-            onChange={(e) => numField("gastosPosesionMensual", e.target.value)}
+            onChange={(value) => update("gastosPosesionMensual", value ?? 0)}
             prefix="$"
             hint="Administración, servicios, etc."
           />
@@ -261,31 +372,27 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
                 : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
             </p>
             <div className="flex max-w-full sm:max-w-md">
-              <input
-                type="number"
-                min={arriendoType === "percent" ? 7 : 0}
-                max={arriendoType === "percent" ? 10 : undefined}
-                step={arriendoType === "percent" ? 0.5 : 1}
+              <InlineNumberInput
                 value={
                   arriendoType === "percent"
-                    ? (data.arriendoPercent ?? 7)
-                    : (data.arriendoProyectado || "")
+                    ? data.arriendoPercent ?? 7
+                    : data.arriendoProyectado || undefined
                 }
-                onChange={(e) => {
+                decimals={arriendoType === "percent"}
+                min={arriendoType === "percent" ? 7 : 0}
+                max={arriendoType === "percent" ? 10 : undefined}
+                onChange={(val) => {
                   if (arriendoType === "percent") {
-                    const raw = e.target.value === "" ? 7 : Number(e.target.value);
-                    const ap = clampArriendoPercent(raw);
+                    const ap = clampArriendoPercent(val ?? 7);
                     onChange({
                       ...data,
                       arriendoPercent: ap,
                       arriendoProyectado: monthlyRentFromAnnualPercent(data.precioCompra, ap),
                     });
                   } else {
-                    const val = e.target.value === "" ? 0 : Number(e.target.value);
-                    if (!isNaN(val)) onChange({ ...data, arriendoProyectado: val });
+                    onChange({ ...data, arriendoProyectado: val ?? 0 });
                   }
                 }}
-                className={arriendoInputClass}
                 placeholder={arriendoType === "percent" ? "7 a 10" : "Ej: 2500000"}
               />
               <select
@@ -304,7 +411,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
                     onChange({ ...data, arriendoType: newType });
                   }
                 }}
-                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className={fieldSelectRightClass(false)}
               >
                 <option value="percent">%</option>
                 <option value="fixed">$ (COP)</option>
@@ -353,9 +460,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={onNext} disabled={!isValid}>
-          Siguiente: Remodelación →
-        </Button>
+        <Button onClick={handleNext}>Siguiente: Remodelación →</Button>
       </div>
     </div>
   );

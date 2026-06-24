@@ -23,8 +23,8 @@ export interface PropertyData {
   torre?: string;
   piso?: number;
   numeroApto?: string;
-  alcobas: number;
-  banos: number;
+  alcobas?: number;
+  banos?: number;
   metrosCuadrados: number;
   m2Remodelacion: number;
   parqueadero: boolean;
@@ -46,8 +46,9 @@ export interface PropertyData {
 
 export interface RemodelingScenario {
   selectedScenario: 1 | 2 | 3;
+  remodelingPercent?: number;
   adminPercentage?: number;
-  customCostPerM2?: number;
+  customCost?: number;
 }
 
 export interface ProjectExpenses {
@@ -79,6 +80,8 @@ export interface RemodelingCost {
   costPerM2: number;
   totalCost: number;
   adminPercentage?: number;
+  remodelingPercent?: number;
+  baseCost?: number;
 }
 
 export interface ProjectCosts {

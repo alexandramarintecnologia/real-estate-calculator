@@ -1,8 +1,10 @@
 "use client";
 
-import Input from "@/components/ui/Input";
+import NumberInput from "@/components/ui/NumberInput";
+import InlineNumberInput from "@/components/ui/InlineNumberInput";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { fieldSelectRightClass } from "@/lib/field-classes";
 import type { ProjectExpenses } from "@/types/analysis.types";
 
 interface ProjectNumbersFormProps {
@@ -18,7 +20,6 @@ export default function ProjectNumbersForm({
   onNext,
   onPrev,
 }: ProjectNumbersFormProps) {
-  // Aseguramos valores por defecto si no existen
   const notaryType = data.notaryFeesType ?? "percent";
   const brokerType = data.brokerCommissionType ?? "percent";
 
@@ -29,7 +30,6 @@ export default function ProjectNumbersForm({
         description="Configura los porcentajes o montos fijos adicionales. Puedes elegir si ingresar el valor en porcentaje (%) o en pesos ($)."
       >
         <div className="grid gap-6 sm:grid-cols-2">
-          {/* Gastos de escrituracion */}
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">
               Gastos de escrituración (opcional) {notaryType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
@@ -40,18 +40,17 @@ export default function ProjectNumbersForm({
                 : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
             </p>
             <div className="flex">
-              <input
-                type="number"
+              <InlineNumberInput
+                value={data.notaryFeesValue}
+                decimals={notaryType === "percent"}
                 min={0}
-                step={notaryType === "percent" ? "0.01" : "1"}
-                value={data.notaryFeesValue ?? ""}
-                onChange={(e) =>
+                allowEmpty
+                onChange={(value) =>
                   onChange({
                     ...data,
-                    notaryFeesValue: e.target.value ? Number(e.target.value) : undefined,
+                    notaryFeesValue: value,
                   })
                 }
-                className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 placeholder={notaryType === "percent" ? "Ej: 3" : "Ej: 3000000"}
               />
               <select
@@ -62,7 +61,7 @@ export default function ProjectNumbersForm({
                     notaryFeesType: e.target.value as "percent" | "fixed",
                   })
                 }
-                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className={fieldSelectRightClass(false)}
               >
                 <option value="percent">%</option>
                 <option value="fixed">$ (COP)</option>
@@ -75,7 +74,6 @@ export default function ProjectNumbersForm({
             </p>
           </div>
 
-          {/* Comision del asesor */}
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">
               Comisión del asesor inmobiliario (opcional) {brokerType === "percent" ? "(Porcentaje %)" : "(Monto en $)"}
@@ -86,18 +84,17 @@ export default function ProjectNumbersForm({
                 : "Puedes cambiar a porcentaje (%) con el selector a la derecha."}
             </p>
             <div className="flex">
-              <input
-                type="number"
+              <InlineNumberInput
+                value={data.brokerCommissionValue}
+                decimals={brokerType === "percent"}
                 min={0}
-                step={brokerType === "percent" ? "0.01" : "1"}
-                value={data.brokerCommissionValue ?? ""}
-                onChange={(e) =>
+                allowEmpty
+                onChange={(value) =>
                   onChange({
                     ...data,
-                    brokerCommissionValue: e.target.value ? Number(e.target.value) : undefined,
+                    brokerCommissionValue: value,
                   })
                 }
-                className="block w-full rounded-l-lg border border-r-0 border-border bg-card px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 placeholder={brokerType === "percent" ? "Ej: 1" : "Ej: 6000000"}
               />
               <select
@@ -108,7 +105,7 @@ export default function ProjectNumbersForm({
                     brokerCommissionType: e.target.value as "percent" | "fixed",
                   })
                 }
-                className="rounded-r-lg border border-border bg-foreground/5 px-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className={fieldSelectRightClass(false)}
               >
                 <option value="percent">%</option>
                 <option value="fixed">$ (COP)</option>
@@ -122,15 +119,15 @@ export default function ProjectNumbersForm({
           </div>
 
           <div className="sm:col-span-2">
-            <Input
+            <NumberInput
               label="Otros gastos (colchón) (opcional)"
-              type="number"
+              value={data.otherExpenses}
               min={0}
-              value={data.otherExpenses ?? ""}
-              onChange={(e) =>
+              allowEmpty
+              onChange={(value) =>
                 onChange({
                   ...data,
-                  otherExpenses: e.target.value ? Number(e.target.value) : undefined,
+                  otherExpenses: value,
                 })
               }
               prefix="$"
