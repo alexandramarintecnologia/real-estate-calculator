@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Card from "@/components/ui/Card";
@@ -36,7 +35,6 @@ function formatDate(iso: string) {
 }
 
 function HistoryContent() {
-  const router = useRouter();
   const [data, setData] = useState<PaginatedHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -44,7 +42,6 @@ function HistoryContent() {
   const debouncedSearch = useDebounce(search, 300);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -70,7 +67,6 @@ function HistoryContent() {
     if (!confirm(`¿Eliminar el análisis "${item.label}"?`)) return;
     try {
       await historyApi.remove(item.id);
-      setSelected((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
       fetchHistory();
     } catch { /* noop */ }
   };
@@ -84,24 +80,6 @@ function HistoryContent() {
     } catch { /* noop */ }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else if (next.size < 4) {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const handleCompare = () => {
-    if (selected.size < 2) return;
-    const ids = Array.from(selected).join(",");
-    router.push(`/historial/comparar?ids=${ids}`);
-  };
-
   return (
     <>
       <Header />
@@ -113,14 +91,12 @@ function HistoryContent() {
               {data ? `${data.total} análisis guardado(s)` : "Cargando..."}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/">
-              <Button variant="outline">+ Nuevo Análisis</Button>
-            </Link>
-          </div>
+          <Link href="/">
+            <Button>+ Nuevo Análisis</Button>
+          </Link>
         </div>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mb-4">
           <input
             type="text"
             placeholder="Buscar por dirección o etiqueta..."
@@ -128,37 +104,6 @@ function HistoryContent() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:max-w-sm"
           />
-
-          {selected.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">
-                {selected.size} seleccionado(s)
-              </span>
-              <Button
-                onClick={handleCompare}
-                disabled={selected.size < 2}
-                size="sm"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
-                  <rect x="3" y="3" width="7" height="18" rx="1" />
-                  <rect x="14" y="3" width="7" height="18" rx="1" />
-                </svg>
-                Comparar
-              </Button>
-              <button
-                onClick={() => setSelected(new Set())}
-                className="text-xs text-muted hover:text-foreground"
-              >
-                Limpiar
-              </button>
-            </div>
-          )}
-
-          {selected.size === 0 && data && data.data.length > 1 && (
-            <p className="text-xs text-muted sm:ml-auto">
-              Selecciona hasta 4 análisis para comparar
-            </p>
-          )}
         </div>
 
         {loading && (
@@ -182,87 +127,59 @@ function HistoryContent() {
           <div className="space-y-3">
             {data.data.map((item) => {
               const badge = decisionLabel(item.decision);
-              const isSelected = selected.has(item.id);
               return (
                 <div
                   key={item.id}
-                  onClick={() => toggleSelect(item.id)}
-                  className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                    isSelected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-border bg-card hover:border-primary/30 hover:bg-card-hover"
-                  }`}
+                  className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-card-hover"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                      {/* Checkbox */}
-                      <div
-                        onClick={(e) => { e.stopPropagation(); toggleSelect(item.id); }}
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded border-2 transition-colors ${
-                          isSelected
-                            ? "border-primary bg-primary"
-                            : "border-border/60 bg-transparent hover:border-primary/50"
-                        }`}
-                      >
-                        {isSelected && (
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="2,6 5,9 10,3" />
-                          </svg>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        {editingId === item.id ? (
-                          <div
-                            className="flex items-center gap-2"
-                            onClick={(e) => e.stopPropagation()}
+                    <div className="min-w-0 flex-1">
+                      {editingId === item.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={editLabel}
+                            onChange={(e) => setEditLabel(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveLabel(item.id);
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                            className="w-full rounded-lg border border-primary bg-card px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleSaveLabel(item.id)}
+                            className="text-xs font-medium text-primary hover:underline"
                           >
-                            <input
-                              value={editLabel}
-                              onChange={(e) => setEditLabel(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveLabel(item.id);
-                                if (e.key === "Escape") setEditingId(null);
-                              }}
-                              className="w-full rounded-lg border border-primary bg-card px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleSaveLabel(item.id)}
-                              className="text-xs font-medium text-primary hover:underline"
-                            >
-                              Guardar
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="text-xs text-muted hover:text-foreground"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <h3 className="truncate text-sm font-semibold text-foreground">
-                              {item.label || item.direccion || "Sin dirección"}
-                            </h3>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingId(item.id);
-                                setEditLabel(item.label || item.direccion || "");
-                              }}
-                              className="shrink-0 text-muted transition-colors hover:text-primary"
-                              title="Renombrar"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                              </svg>
-                            </button>
-                          </div>
-                        )}
-                        <p className="mt-0.5 text-xs text-muted">{formatDate(item.createdAt)}</p>
-                      </div>
+                            Guardar
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-xs text-muted hover:text-foreground"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate text-sm font-semibold text-foreground">
+                            {item.label || item.direccion || "Sin dirección"}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setEditingId(item.id);
+                              setEditLabel(item.label || item.direccion || "");
+                            }}
+                            className="shrink-0 text-muted transition-colors hover:text-primary"
+                            title="Renombrar"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                      <p className="mt-0.5 text-xs text-muted">{formatDate(item.createdAt)}</p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -286,10 +203,7 @@ function HistoryContent() {
                     </div>
                   </div>
 
-                  <div
-                    className="mt-3 flex items-center gap-2 border-t border-border pt-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                     <Link
                       href={`/historial/${item.id}`}
                       className="text-xs font-medium text-primary hover:underline"
