@@ -17,6 +17,8 @@ interface PropertyFormProps {
   data: PropertyData;
   onChange: (data: PropertyData) => void;
   onNext: () => void;
+  /** Porcentaje de remodelación estimado (para el preview del precio de venta). Default 32. */
+  remodelingPercent?: number;
 }
 
 type RequiredField =
@@ -44,10 +46,14 @@ const monthlyRentFromAnnualPercent = (purchase: number, percent: number) =>
     ? Math.round((purchase * clampArriendoPercent(percent)) / 100 / 12)
     : 0;
 
-export default function PropertyForm({ data, onChange, onNext }: PropertyFormProps) {
+export default function PropertyForm({ data, onChange, onNext, remodelingPercent = 32 }: PropertyFormProps) {
   const update = <K extends keyof PropertyData>(key: K, value: PropertyData[K]) => {
     onChange({ ...data, [key]: value });
   };
+
+  /** Base real = compra + remodelación estimada */
+  const estimatedBase = (purchase: number) =>
+    purchase > 0 ? purchase * (1 + remodelingPercent / 100) : 0;
 
   const handlePrecioCompraChange = (n: number | undefined) => {
     const precio = n ?? 0;
@@ -55,7 +61,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
     const currentVentaType = data.precioVentaType ?? "percent";
     if (currentVentaType === "percent") {
       const percent = data.precioVentaPercent ?? 30;
-      updates.precioVentaProyectado = precio * (1 + percent / 100);
+      updates.precioVentaProyectado = estimatedBase(precio) * (1 + percent / 100);
     }
     const currentArriendoType = data.arriendoType ?? "percent";
     if (currentArriendoType === "percent") {
@@ -278,7 +284,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
                     onChange({
                       ...data,
                       precioVentaPercent: amount,
-                      precioVentaProyectado: data.precioCompra * (1 + amount / 100),
+                      precioVentaProyectado: estimatedBase(data.precioCompra) * (1 + amount / 100),
                     });
                   } else {
                     onChange({
@@ -305,7 +311,7 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
                   const newType = e.target.value as "percent" | "fixed";
                   if (newType === "percent") {
                     const percent = data.precioVentaPercent ?? 30;
-                    const newProyectado = data.precioCompra * (1 + percent / 100);
+                    const newProyectado = estimatedBase(data.precioCompra) * (1 + percent / 100);
                     onChange({
                       ...data,
                       precioVentaType: newType,
@@ -332,12 +338,12 @@ export default function PropertyForm({ data, onChange, onNext }: PropertyFormPro
             )}
             {!getError("precioVentaProyectado") && ventaType === "percent" && data.precioVentaProyectado > 0 && (
               <p className="text-xs text-muted">
-                Precio calculado: {formatCOP(data.precioVentaProyectado)}
+                Precio estimado: {formatCOP(data.precioVentaProyectado)}
               </p>
             )}
             {!getError("precioVentaProyectado") && ventaType === "percent" && (
               <p id="precio-venta-hint" className="text-xs text-muted">
-                Ingresa el porcentaje de rentabilidad esperada (ej: 20 al 50%) sobre el precio de compra.
+                El % se aplica sobre <strong>precio de compra + remodelación</strong> (ej: 30% sobre $115M = $149.5M).
               </p>
             )}
           </div>

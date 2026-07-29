@@ -54,7 +54,12 @@ function HomeContent() {
 
         <div className="mt-6">
           {step === 1 && (
-            <PropertyForm data={property} onChange={setProperty} onNext={goNext} />
+            <PropertyForm
+              data={property}
+              onChange={setProperty}
+              onNext={goNext}
+              remodelingPercent={remodeling.remodelingPercent ?? 32}
+            />
           )}
           {step === 2 && (
             <RemodelingForm
