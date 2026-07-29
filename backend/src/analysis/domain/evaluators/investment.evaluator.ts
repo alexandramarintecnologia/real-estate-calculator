@@ -90,15 +90,15 @@ export class InvestmentEvaluator {
 
     if (roiRating === Rating.EXCELENTE) {
       recs.push(
-        `ROI de ${profitability.roi}% — Excelente retorno de inversión.`,
+        `ROI de ${profitability.roi}% — Excelente retorno. Este tipo de inmueble con 25%+ es una compra segura.`,
       );
     } else if (roiRating === Rating.BUENA) {
       recs.push(
-        `ROI de ${profitability.roi}% — Retorno aceptable. Evalúa si puedes negociar un mejor precio de compra.`,
+        `ROI de ${profitability.roi}% — Retorno aceptable (15-25%). Evalúa si puedes negociar un mejor precio o reducir costos de remodelación para llegar al 25%.`,
       );
     } else {
       recs.push(
-        `ROI de ${profitability.roi}% — Retorno bajo. Considera renegociar el precio o buscar otra propiedad.`,
+        `ROI de ${profitability.roi}% — Retorno bajo (menos del 15%). Considera renegociar el precio de compra o buscar otra propiedad.`,
       );
     }
 

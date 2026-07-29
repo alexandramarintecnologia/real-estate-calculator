@@ -1,6 +1,6 @@
 export const ROI_THRESHOLDS = {
-  EXCELLENT: 15,
-  GOOD: 8,
+  EXCELLENT: 25,
+  GOOD: 15,
 } as const;
 
 export const CAP_RATE_THRESHOLDS = {
