@@ -107,8 +107,10 @@ export default function BulkImportModal({ onClose, onComplete }: BulkImportModal
               El archivo debe tener columnas con encabezados como{" "}
               <strong>CORREO</strong> (o email), <strong>CLIENTE</strong> (o nombre) y{" "}
               <strong>TELÉFONO</strong> (opcional). Funciona directamente con la exportación
-              de Google Sheets del listado de infoproductos. Las filas de título
-              antes del encabezado se ignoran automáticamente.
+              de Google Sheets del listado de infoproductos: las filas de título antes del
+              encabezado se ignoran automáticamente y las columnas extra (fechas, etc.) no
+              estorban. Los usuarios que ya existan en la base de datos se omiten
+              automáticamente.
             </p>
           </div>
 
