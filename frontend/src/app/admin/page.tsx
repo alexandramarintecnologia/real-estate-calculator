@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Header from "@/components/layout/Header";
+import AppShell from "@/components/layout/AppShell";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
@@ -274,8 +274,7 @@ function AdminContent() {
 
   return (
     <>
-      <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+      <AppShell maxWidth="max-w-6xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-foreground">Panel de administración</h2>
@@ -538,7 +537,7 @@ function AdminContent() {
             </>
           )}
         </Card>
-      </main>
+      </AppShell>
 
       {showImport && (
         <BulkImportModal
@@ -552,8 +551,15 @@ function AdminContent() {
           title="Crear nuevo usuario"
           onClose={() => setShowCreate(false)}
           onSubmit={async (values) => {
-            const { password: _password, ...rest } = values;
-            const payload: CreateUserPayload = { ...rest } as CreateUserPayload;
+            // El alta no envia contraseña: el usuario la crea en su primer ingreso.
+            const payload: CreateUserPayload = {
+              email: values.email,
+              fullName: values.fullName,
+              phone: values.phone,
+              role: values.role,
+              isActive: values.isActive,
+              expiresAt: values.expiresAt,
+            };
             await apiClient.post<AuthUser>("/users", payload);
             await handleCreated(payload.email);
           }}
@@ -567,9 +573,15 @@ function AdminContent() {
           initial={editingUser}
           onClose={() => setEditingUser(null)}
           onSubmit={async (values) => {
-            const { email: _email, password, ...rest } = values;
-            const payload: UpdateUserPayload = { ...rest };
-            if (password) payload.password = password;
+            // El email no es editable, por eso no viaja en el payload.
+            const payload: UpdateUserPayload = {
+              fullName: values.fullName,
+              phone: values.phone,
+              role: values.role,
+              isActive: values.isActive,
+              expiresAt: values.expiresAt,
+            };
+            if (values.password) payload.password = values.password;
             await apiClient.patch<AuthUser>(`/users/${editingUser.id}`, payload);
             await handleUpdated();
           }}

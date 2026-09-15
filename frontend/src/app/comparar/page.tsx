@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import Header from "@/components/layout/Header";
+import AppShell from "@/components/layout/AppShell";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -622,14 +622,13 @@ function CompararContent() {
 
   return (
     <>
-      <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+      <AppShell maxWidth="max-w-6xl">
         {step === "select" ? (
           <SelectorStep onCompare={handleCompare} />
         ) : (
           <ReportStep ids={selectedIds} onBack={() => setStep("select")} />
         )}
-      </main>
+      </AppShell>
     </>
   );
 }

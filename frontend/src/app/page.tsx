@@ -1,7 +1,7 @@
 "use client";
 
 import { useAnalysis } from "@/hooks/useAnalysis";
-import Header from "@/components/layout/Header";
+import AppShell from "@/components/layout/AppShell";
 import Stepper from "@/components/layout/Stepper";
 import PropertyForm from "@/components/forms/PropertyForm";
 import RemodelingForm from "@/components/forms/RemodelingForm";
@@ -42,8 +42,7 @@ function HomeContent() {
 
   return (
     <>
-      <Header />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+      <AppShell>
         <Stepper currentStep={step} highestStep={highestStep} onStepClick={(s) => s <= highestStep && goTo(s)} />
 
         {error && (
@@ -58,7 +57,7 @@ function HomeContent() {
               data={property}
               onChange={setProperty}
               onNext={goNext}
-              remodelingPercent={remodeling.remodelingPercent ?? 32}
+              remodeling={remodeling}
             />
           )}
           {step === 2 && (
@@ -91,7 +90,7 @@ function HomeContent() {
             <ResultsDashboard result={result} property={property} onReset={reset} />
           )}
         </div>
-      </main>
+      </AppShell>
     </>
   );
 }

@@ -11,14 +11,18 @@ import FormErrorSummary from "@/components/ui/FormErrorSummary";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import { fieldSelectRightClass } from "@/lib/field-classes";
 import { formatCOP } from "@/lib/formatters";
-import type { PropertyData } from "@/types/analysis.types";
+import {
+  estimateProjectedSalePrice,
+  estimateRemodelingCostFor,
+} from "@/lib/remodeling-estimate";
+import type { PropertyData, RemodelingScenario } from "@/types/analysis.types";
 
 interface PropertyFormProps {
   data: PropertyData;
   onChange: (data: PropertyData) => void;
   onNext: () => void;
-  /** Porcentaje de remodelación estimado (para el preview del precio de venta). Default 32. */
-  remodelingPercent?: number;
+  /** Escenario de remodelación elegido: define la base del precio de venta. */
+  remodeling: RemodelingScenario;
 }
 
 type RequiredField =
@@ -46,14 +50,22 @@ const monthlyRentFromAnnualPercent = (purchase: number, percent: number) =>
     ? Math.round((purchase * clampArriendoPercent(percent)) / 100 / 12)
     : 0;
 
-export default function PropertyForm({ data, onChange, onNext, remodelingPercent = 32 }: PropertyFormProps) {
+export default function PropertyForm({ data, onChange, onNext, remodeling }: PropertyFormProps) {
   const update = <K extends keyof PropertyData>(key: K, value: PropertyData[K]) => {
     onChange({ ...data, [key]: value });
   };
 
-  /** Base real = compra + remodelación estimada */
+  /** Base real = compra + costo de remodelación del escenario elegido. */
   const estimatedBase = (purchase: number) =>
-    purchase > 0 ? purchase * (1 + remodelingPercent / 100) : 0;
+    purchase > 0 ? purchase + estimateRemodelingCostFor(purchase, remodeling) : 0;
+
+  /** Mismo cálculo que hace el backend, para que el preview no se desvíe. */
+  const projectedSale = (purchase: number, salePercent: number) =>
+    estimateProjectedSalePrice(
+      purchase,
+      estimateRemodelingCostFor(purchase, remodeling),
+      salePercent,
+    );
 
   const handlePrecioCompraChange = (n: number | undefined) => {
     const precio = n ?? 0;
@@ -61,7 +73,7 @@ export default function PropertyForm({ data, onChange, onNext, remodelingPercent
     const currentVentaType = data.precioVentaType ?? "percent";
     if (currentVentaType === "percent") {
       const percent = data.precioVentaPercent ?? 30;
-      updates.precioVentaProyectado = estimatedBase(precio) * (1 + percent / 100);
+      updates.precioVentaProyectado = projectedSale(precio, percent);
     }
     const currentArriendoType = data.arriendoType ?? "percent";
     if (currentArriendoType === "percent") {
@@ -284,7 +296,7 @@ export default function PropertyForm({ data, onChange, onNext, remodelingPercent
                     onChange({
                       ...data,
                       precioVentaPercent: amount,
-                      precioVentaProyectado: estimatedBase(data.precioCompra) * (1 + amount / 100),
+                      precioVentaProyectado: projectedSale(data.precioCompra, amount),
                     });
                   } else {
                     onChange({
@@ -311,7 +323,7 @@ export default function PropertyForm({ data, onChange, onNext, remodelingPercent
                   const newType = e.target.value as "percent" | "fixed";
                   if (newType === "percent") {
                     const percent = data.precioVentaPercent ?? 30;
-                    const newProyectado = estimatedBase(data.precioCompra) * (1 + percent / 100);
+                    const newProyectado = projectedSale(data.precioCompra, percent);
                     onChange({
                       ...data,
                       precioVentaType: newType,
@@ -343,7 +355,8 @@ export default function PropertyForm({ data, onChange, onNext, remodelingPercent
             )}
             {!getError("precioVentaProyectado") && ventaType === "percent" && (
               <p id="precio-venta-hint" className="text-xs text-muted">
-                El % se aplica sobre <strong>precio de compra + remodelación</strong> (ej: 30% sobre $115M = $149.5M).
+                El % se aplica sobre <strong>precio de compra + remodelación</strong>
+                {data.precioCompra > 0 && <> — base actual: {formatCOP(estimatedBase(data.precioCompra))}</>}.
               </p>
             )}
           </div>

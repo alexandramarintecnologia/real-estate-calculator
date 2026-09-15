@@ -49,7 +49,8 @@ export class AnalyzePropertyUseCase {
 
     // Cuando el precio de venta es porcentual, la base es precioCompra + remodelación
     const projectedSalePrice =
-      property.precioVentaType === 'percent' && property.precioVentaPercent != null
+      property.precioVentaType === 'percent' &&
+      property.precioVentaPercent != null
         ? Math.round(
             (property.precioCompra + selectedRemodelingCost.totalCost) *
               (1 + property.precioVentaPercent / 100),

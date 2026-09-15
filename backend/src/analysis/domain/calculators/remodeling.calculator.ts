@@ -18,7 +18,10 @@ export class RemodelingCalculator {
 
     const remodelingPercent = Math.min(
       config.maxPercent,
-      Math.max(config.minPercent, input.remodelingPercent ?? config.defaultPercent),
+      Math.max(
+        config.minPercent,
+        input.remodelingPercent ?? config.defaultPercent,
+      ),
     );
 
     const baseCost =
@@ -29,14 +32,12 @@ export class RemodelingCalculator {
 
     if (scenario === 3) {
       effectiveAdminPercent =
-        input.adminPercentage ??
-        REMODELING_SCENARIOS[3].defaultAdminPercent;
+        input.adminPercentage ?? REMODELING_SCENARIOS[3].defaultAdminPercent;
       totalCost = Math.round(baseCost * (1 + effectiveAdminPercent / 100));
     }
 
     return {
       scenario,
-      costPerM2: 0,
       totalCost,
       adminPercentage: effectiveAdminPercent,
       remodelingPercent,

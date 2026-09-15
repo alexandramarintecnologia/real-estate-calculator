@@ -428,6 +428,8 @@ export default function AnalysisReportPDF({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
+            {/* Image de @react-pdf/renderer, no un <img>: no admite alt. */}
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image src="/logo.png" style={styles.logoImage} />
             <View>
               <Text style={styles.brandTitle}>Calculadora Inmobiliaria</Text>
@@ -602,6 +604,8 @@ export default function AnalysisReportPDF({
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
+            {/* Image de @react-pdf/renderer, no un <img>: no admite alt. */}
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image src="/logo.png" style={styles.logoImage} />
             <View>
               <Text style={styles.brandTitle}>Calculadora Inmobiliaria</Text>

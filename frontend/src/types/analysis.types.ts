@@ -77,7 +77,6 @@ export interface AnalysisRequest {
 
 export interface RemodelingCost {
   scenario: number;
-  costPerM2: number;
   totalCost: number;
   adminPercentage?: number;
   remodelingPercent?: number;

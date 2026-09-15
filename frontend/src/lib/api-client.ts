@@ -1,4 +1,10 @@
 import type { AnalysisRequest, AnalysisResult } from "@/types/analysis.types";
+import type {
+  AreaCatalog,
+  BudgetTierConfig,
+  RemodelingEstimate,
+  RemodelingRequest,
+} from "@/types/remodeling.types";
 
 const API_VERSION = "/api/v1";
 
@@ -107,4 +113,12 @@ export const historyApi = {
       { label },
     ),
   remove: (id: string) => apiClient.delete<void>(`/analysis-history/${id}`),
+};
+
+export const remodelingApi = {
+  /** Catalogo de niveles, con sus porcentajes por defecto. */
+  tiers: () => apiClient.get<BudgetTierConfig[]>("/remodeling/tiers"),
+  areas: () => apiClient.get<AreaCatalog>("/remodeling/areas"),
+  estimate: (data: RemodelingRequest) =>
+    apiClient.post<RemodelingEstimate>("/remodeling/estimate", data),
 };

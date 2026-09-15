@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Header from "@/components/layout/Header";
+import AppShell from "@/components/layout/AppShell";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import { historyApi } from "@/lib/api-client";
@@ -37,12 +37,11 @@ function DetailContent() {
   if (loading) {
     return (
       <>
-        <Header />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+        <AppShell>
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
           </div>
-        </main>
+        </AppShell>
       </>
     );
   }
@@ -50,8 +49,7 @@ function DetailContent() {
   if (error || !data) {
     return (
       <>
-        <Header />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+        <AppShell>
           <div className="rounded-lg border border-danger/20 bg-danger/5 p-4 text-sm text-danger">
             {error || "Análisis no encontrado"}
           </div>
@@ -60,15 +58,14 @@ function DetailContent() {
               ← Volver al historial
             </Button>
           </div>
-        </main>
+        </AppShell>
       </>
     );
   }
 
   return (
     <>
-      <Header />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+      <AppShell>
         <div className="mb-4 flex items-center gap-3">
           <Button variant="outline" onClick={() => router.push("/historial")}>
             ← Historial
@@ -94,7 +91,7 @@ function DetailContent() {
           property={data.request.property}
           onReset={() => router.push("/historial")}
         />
-      </main>
+      </AppShell>
     </>
   );
 }

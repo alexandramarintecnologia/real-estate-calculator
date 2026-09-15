@@ -1,4 +1,10 @@
-import { IsArray, IsOptional, IsString, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  ArrayMinSize,
+  ArrayMaxSize,
+} from 'class-validator';
 
 export class UpdateAnalysisLabelDto {
   @IsString()

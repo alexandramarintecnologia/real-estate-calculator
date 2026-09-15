@@ -41,7 +41,10 @@ export class AnalysisHistoryService {
       label: (property?.['direccion'] as string) || 'Sin dirección',
       direccion: (property?.['direccion'] as string) || '',
       precioCompra: (property?.['precioCompra'] as number) || 0,
-      precioVenta: (property?.['precioVentaProyectado'] as number) || 0,
+      // Tomamos el precio de venta que realmente calculo el dominio, no el que
+      // venia en la peticion: cuando precioVentaType es 'percent' el use case lo
+      // recalcula sobre compra + remodelacion y el valor del formulario queda obsoleto.
+      precioVenta: (profitability?.['projectedSalePrice'] as number) || 0,
       roi: (profitability?.['roi'] as number) || 0,
       decision: (evaluation?.['decision'] as string) || '',
     });

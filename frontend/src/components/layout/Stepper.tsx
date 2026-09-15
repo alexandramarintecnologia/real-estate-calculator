@@ -28,7 +28,6 @@ export default function Stepper({ currentStep, highestStep = currentStep, onStep
         {steps.map((step, idx) => {
           const isActive = step.id === currentStep;
           const isUnlocked = step.id <= highestStep;
-          const isCompleted = step.id < highestStep;
           const isClickable = isUnlocked && onStepClick;
 
           return (
