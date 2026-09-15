@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AnalysisModule } from './analysis/analysis.module.js';
 import { AnalysisHistoryModule } from './analysis-history/analysis-history.module.js';
+import { RemodelingModule } from './remodeling/remodeling.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 
@@ -20,6 +21,7 @@ import { AuthModule } from './auth/auth.module.js';
     AuthModule,
     AnalysisModule,
     AnalysisHistoryModule,
+    RemodelingModule,
   ],
 })
 export class AppModule {}

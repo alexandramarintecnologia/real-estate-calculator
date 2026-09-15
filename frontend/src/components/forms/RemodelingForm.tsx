@@ -4,6 +4,11 @@ import NumberInput from "@/components/ui/NumberInput";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { formatCOP } from "@/lib/formatters";
+import {
+  DEFAULT_ADMIN_PERCENT,
+  clampRemodelingPercent,
+  estimateRemodelingCost,
+} from "@/lib/remodeling-estimate";
 import type { RemodelingScenario, PropertyData } from "@/types/analysis.types";
 
 interface ScenarioConfig {
@@ -49,8 +54,6 @@ const scenarioConfigs: ScenarioConfig[] = [
   },
 ];
 
-const DEFAULT_ADMIN_PERCENT = 18;
-
 interface RemodelingFormProps {
   data: RemodelingScenario;
   property: PropertyData;
@@ -70,22 +73,19 @@ export default function RemodelingForm({
   const selectedScenario = data.selectedScenario;
   const currentConfig = scenarioConfigs.find((s) => s.id === selectedScenario)!;
 
-  const getPercentForScenario = (config: ScenarioConfig) => {
-    const raw = data.remodelingPercent ?? config.defaultPercent;
-    return Math.min(config.maxPercent, Math.max(config.minPercent, raw));
-  };
+  const getPercentForScenario = (config: ScenarioConfig) =>
+    clampRemodelingPercent(config.id, data.remodelingPercent);
 
-  const estimateCost = (config: ScenarioConfig): number => {
-    if (data.customCost && config.id === selectedScenario) {
-      const base = data.customCost;
-      const admin = config.hasAdmin ? (data.adminPercentage ?? DEFAULT_ADMIN_PERCENT) / 100 : 0;
-      return Math.round(base * (1 + admin));
-    }
-    const percent = getPercentForScenario(config);
-    const base = Math.round(purchasePrice * percent / 100);
-    const admin = config.hasAdmin ? (data.adminPercentage ?? DEFAULT_ADMIN_PERCENT) / 100 : 0;
-    return Math.round(base * (1 + admin));
-  };
+  // Usa el mismo calculo que el backend. El customCost solo aplica a la tarjeta
+  // del escenario seleccionado; las otras se muestran con su % teorico.
+  const estimateCost = (config: ScenarioConfig): number =>
+    estimateRemodelingCost({
+      purchasePrice,
+      scenario: config.id,
+      remodelingPercent: data.remodelingPercent,
+      adminPercentage: data.adminPercentage,
+      customCost: config.id === selectedScenario ? data.customCost : undefined,
+    });
 
   const currentPercent = getPercentForScenario(currentConfig);
 

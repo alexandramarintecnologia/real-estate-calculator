@@ -127,7 +127,10 @@ export class UsersService implements OnModuleInit {
     const invalidEmails: string[] = [];
     const candidates = dto.users
       .map((u) => ({
-        email: u.email.trim().toLowerCase().replace(/^mailto:/i, ''),
+        email: u.email
+          .trim()
+          .toLowerCase()
+          .replace(/^mailto:/i, ''),
         fullName: u.fullName.trim(),
         phone: u.phone?.trim() ?? '',
       }))
@@ -392,7 +395,7 @@ export class UsersService implements OnModuleInit {
       expiresAt: user.expiresAt,
       lastLoginAt: user.lastLoginAt,
       mustSetPassword: user.mustSetPassword ?? false,
-      createdAt: (user as any).createdAt,
+      createdAt: user.createdAt,
     };
   }
 }

@@ -6,7 +6,13 @@ export enum UserRole {
   STUDENT = 'student',
 }
 
-export type UserDocument = User & Document;
+/** `timestamps: true` agrega createdAt/updatedAt, pero no aparecen en la clase. */
+export interface Timestamps {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type UserDocument = User & Document & Timestamps;
 
 @Schema({ timestamps: true })
 export class User {

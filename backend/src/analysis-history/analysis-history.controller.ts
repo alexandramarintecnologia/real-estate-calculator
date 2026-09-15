@@ -13,20 +13,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type JwtUser,
+} from '../auth/decorators/current-user.decorator.js';
 import { AnalysisHistoryService } from './analysis-history.service.js';
+import type { AnalysisHistoryDocument } from './schemas/analysis-history.schema.js';
 import {
   AnalysisHistoryQueryDto,
   CompareAnalysisDto,
   UpdateAnalysisLabelDto,
 } from './dto/analysis-history.dto.js';
-
-interface JwtUser {
-  id: string;
-  email: string;
-  role: string;
-  fullName: string;
-}
 
 @UseGuards(JwtAuthGuard)
 @Controller('analysis-history')
@@ -39,7 +36,10 @@ export class AnalysisHistoryController {
     @Query() query: AnalysisHistoryQueryDto,
   ) {
     const page = Math.max(1, parseInt(query.page || '1', 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(query.limit || '20', 10) || 20));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(query.limit || '20', 10) || 20),
+    );
     const result = await this.historyService.findByUser(
       user.id,
       page,
@@ -75,10 +75,7 @@ export class AnalysisHistoryController {
   }
 
   @Post('compare')
-  async compare(
-    @CurrentUser() user: JwtUser,
-    @Body() dto: CompareAnalysisDto,
-  ) {
+  async compare(@CurrentUser() user: JwtUser, @Body() dto: CompareAnalysisDto) {
     const docs = await this.historyService.findManyByUser(dto.ids, user.id);
     return docs.map((doc) => this.serializeFull(doc));
   }
@@ -90,9 +87,9 @@ export class AnalysisHistoryController {
     if (!deleted) throw new NotFoundException('Análisis no encontrado');
   }
 
-  private serialize(doc: any) {
+  private serialize(doc: AnalysisHistoryDocument) {
     return {
-      id: doc._id.toString(),
+      id: String(doc._id),
       label: doc.label,
       direccion: doc.direccion,
       precioCompra: doc.precioCompra,
@@ -103,7 +100,7 @@ export class AnalysisHistoryController {
     };
   }
 
-  private serializeFull(doc: any) {
+  private serializeFull(doc: AnalysisHistoryDocument) {
     return {
       ...this.serialize(doc),
       request: doc.request,

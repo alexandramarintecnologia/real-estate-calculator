@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import Header from "@/components/layout/Header";
+import AppShell from "@/components/layout/AppShell";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -82,8 +82,7 @@ function HistoryContent() {
 
   return (
     <>
-      <Header />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
+      <AppShell>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Historial de Análisis</h1>
@@ -245,7 +244,7 @@ function HistoryContent() {
             </button>
           </div>
         )}
-      </main>
+      </AppShell>
     </>
   );
 }

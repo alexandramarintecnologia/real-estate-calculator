@@ -2,6 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { calculateAnalysis } from "@/lib/api-client";
+import {
+  estimateProjectedSalePrice,
+  estimateRemodelingCostFor,
+} from "@/lib/remodeling-estimate";
 import { QualitativeScore } from "@/types/analysis.types";
 import type {
   PropertyData,
@@ -58,6 +62,29 @@ export function useAnalysis() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Al cambiar el escenario o el % de remodelacion cambia la base del precio de
+   * venta (compra + remodelacion), asi que lo resincronizamos. Sin esto el paso 1
+   * mostraba un precio calculado con el 32% por defecto aunque despues se eligiera
+   * un escenario del 15%, y el backend devolvia otro numero.
+   */
+  const updateRemodeling = useCallback((next: RemodelingScenario) => {
+    setRemodeling(next);
+    setProperty((prev) => {
+      if ((prev.precioVentaType ?? "percent") !== "percent") return prev;
+
+      const remodelingCost = estimateRemodelingCostFor(prev.precioCompra, next);
+      const precioVentaProyectado = estimateProjectedSalePrice(
+        prev.precioCompra,
+        remodelingCost,
+        prev.precioVentaPercent ?? 30,
+      );
+
+      if (prev.precioVentaProyectado === precioVentaProyectado) return prev;
+      return { ...prev, precioVentaProyectado };
+    });
+  }, []);
 
   const goNext = useCallback(() => {
     setStep((s) => {
@@ -117,7 +144,7 @@ export function useAnalysis() {
     property,
     setProperty,
     remodeling,
-    setRemodeling,
+    setRemodeling: updateRemodeling,
     expenses,
     setExpenses,
     qualitative,

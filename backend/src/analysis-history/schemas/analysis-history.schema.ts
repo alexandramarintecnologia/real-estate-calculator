@@ -1,7 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type AnalysisHistoryDocument = AnalysisHistory & Document;
+/** `timestamps: true` agrega createdAt/updatedAt, pero no aparecen en la clase. */
+export interface Timestamps {
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type AnalysisHistoryDocument = AnalysisHistory & Document & Timestamps;
 
 @Schema({ timestamps: true })
 export class AnalysisHistory {

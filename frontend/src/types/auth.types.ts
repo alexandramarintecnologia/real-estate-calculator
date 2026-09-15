@@ -24,6 +24,7 @@ export interface CreateUserPayload {
   fullName: string;
   phone?: string;
   role?: UserRole;
+  isActive?: boolean;
   expiresAt?: string | null;
 }
 
